@@ -1,475 +1,356 @@
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  BarChart, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
   Bar,
   PieChart,
   Pie,
-  Cell,
-  AreaChart,
-  Area,
-  ScatterChart,
-  Scatter
+  Cell
 } from 'recharts'
-import { 
-  TrendUp, 
-  Calendar, 
-  Target, 
+import {
+  TrendUp,
+  Calendar,
+  Target,
   Barbell,
   Pulse,
   ChartLine,
   Trophy,
-  Clock
+  Clock,
+  Play,
+  Lightning
 } from '@phosphor-icons/react'
+import { Link } from '@tanstack/react-router'
+import { usePersonalRecords, useProgressSummary } from '../hooks/useProgress'
+import { useUserSessions, useSessionStats } from '../hooks/useSessions'
+import { LoadingState, SkeletonCard } from '../components/ui/loading'
 
-// Mock data for development
-const e1rmData = [
-  { week: 1, bench: 100, squat: 120, deadlift: 140, ohp: 50, rpe: 8.0 },
-  { week: 2, bench: 102.5, squat: 123, deadlift: 143.5, ohp: 51.25, rpe: 8.2 },
-  { week: 3, bench: 105, squat: 126, deadlift: 147, ohp: 52.5, rpe: 8.1 },
-  { week: 4, bench: 107.5, squat: 129, deadlift: 150.5, ohp: 53.75, rpe: 8.3 },
-  { week: 5, bench: 110, squat: 132, deadlift: 154, ohp: 55, rpe: 8.0 },
-  { week: 6, bench: 112.5, squat: 135, deadlift: 157.5, ohp: 56.25, rpe: 8.1 },
-]
-
-const volumeData = [
-  { muscle: 'Chest', sets: 12, volume: 2400, rpe: 8.1 },
-  { muscle: 'Shoulders', sets: 10, volume: 1800, rpe: 7.8 },
-  { muscle: 'Triceps', sets: 8, volume: 1200, rpe: 8.0 },
-  { muscle: 'Back', sets: 14, volume: 2800, rpe: 8.2 },
-  { muscle: 'Biceps', sets: 6, volume: 900, rpe: 7.9 },
-  { muscle: 'Legs', sets: 16, volume: 3200, rpe: 8.3 },
-]
-
-const rpeData = [
-  { week: 1, push: 8.0, pull: 7.8, legs: 8.2 },
-  { week: 2, push: 8.2, pull: 8.0, legs: 8.1 },
-  { week: 3, push: 8.1, pull: 7.9, legs: 8.3 },
-  { week: 4, push: 8.3, pull: 8.1, legs: 8.0 },
-  { week: 5, push: 8.0, pull: 8.2, legs: 8.1 },
-  { week: 6, push: 8.1, pull: 8.0, legs: 8.2 },
-]
-
-const personalRecords = [
-  { exercise: 'Bench Press', weight: '110 kg', date: '2024-01-15', previous: '107.5 kg', improvement: '+2.5 kg' },
-  { exercise: 'Squat', weight: '132 kg', date: '2024-01-11', previous: '129 kg', improvement: '+3 kg' },
-  { exercise: 'Deadlift', weight: '154 kg', date: '2024-01-11', previous: '150.5 kg', improvement: '+3.5 kg' },
-  { exercise: 'Overhead Press', weight: '55 kg', date: '2024-01-15', previous: '53.75 kg', improvement: '+1.25 kg' },
-]
-
-const weeklyStats = {
-  totalSessions: 18,
-  totalVolume: 45600,
-  averageRpe: 8.1,
-  personalRecords: 4,
-  streak: 12,
-  consistency: 95
-}
-
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff']
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
 export default function Progress() {
-  const [activeTab, setActiveTab] = useState<'strength' | 'volume' | 'rpe' | 'body' | 'analytics'>('strength')
+  const [activeTab, setActiveTab] = useState<'overview' | 'strength' | 'volume'>('overview')
+
+  const { data: personalRecords, isLoading: prLoading } = usePersonalRecords()
+  const { data: progressSummary, isLoading: summaryLoading } = useProgressSummary()
+  const { data: sessions = [], isLoading: sessionsLoading } = useUserSessions()
+  const sessionStats = useSessionStats(sessions)
+
+  const isLoading = prLoading || summaryLoading || sessionsLoading
+  const hasData = sessions.length > 0 || personalRecords?.length || progressSummary?.personalRecords?.length
+
+  // Generate weekly data from sessions
+  const weeklyData = sessions.reduce((acc, session) => {
+    const weekStart = new Date(session.date)
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+    const weekKey = weekStart.toISOString().split('T')[0]
+
+    if (!acc[weekKey]) {
+      acc[weekKey] = {
+        week: weekKey,
+        sessions: 0,
+        volume: 0,
+        avgRpe: 0,
+        totalRpe: 0,
+        rpeCount: 0
+      }
+    }
+
+    acc[weekKey].sessions++
+    const sessionVolume = session.setLogs.reduce((sum, set) => sum + (set.weightKg * set.reps), 0)
+    acc[weekKey].volume += sessionVolume
+
+    const sessionRpes = session.setLogs.filter(set => set.rpe > 0)
+    if (sessionRpes.length > 0) {
+      const sessionAvgRpe = sessionRpes.reduce((sum, set) => sum + set.rpe, 0) / sessionRpes.length
+      acc[weekKey].totalRpe += sessionAvgRpe
+      acc[weekKey].rpeCount++
+    }
+
+    return acc
+  }, {} as Record<string, any>)
+
+  const chartData = Object.values(weeklyData).map((week: any) => ({
+    ...week,
+    avgRpe: week.rpeCount > 0 ? Math.round((week.totalRpe / week.rpeCount) * 10) / 10 : 0,
+    weekLabel: `Week ${Object.keys(weeklyData).indexOf(week.week) + 1}`
+  })).slice(-8) // Last 8 weeks
+
+  // Muscle group data from sessions
+  const muscleGroupData = progressSummary?.muscleGroupProgress || []
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="max-w-6xl mx-auto pt-12 pb-8 px-6">
+          <LoadingState message="Loading your progress..." />
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="max-w-4xl mx-auto pt-12 pb-8 px-6">
+          {/* Empty State - Beautifully designed */}
+          <div className="text-center mb-12 animate-fade-in">
+            <h1 className="text-4xl font-bold tracking-tight mb-3">Start Tracking Progress</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Complete your first workout to see amazing insights, progress charts, and personal records.
+            </p>
+          </div>
+
+          <div className="glass rounded-2xl p-8 text-center mb-8">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ChartLine className="h-10 w-10 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-4">Your Progress Awaits</h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              Once you complete a few workouts, you'll see detailed analytics about your strength gains,
+              volume progression, and personal records.
+            </p>
+            <Link to="/plan">
+              <Button size="lg" className="btn-hover h-12 px-8 text-base font-semibold">
+                <Play className="h-5 w-5 mr-2" />
+                Start Your First Workout
+              </Button>
+            </Link>
+          </div>
+
+          {/* Preview of what's coming */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="glass rounded-xl p-6 text-center">
+              <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
+              <h3 className="font-semibold mb-2">Personal Records</h3>
+              <p className="text-sm text-muted-foreground">Track your best lifts and celebrate new PRs</p>
+            </div>
+            <div className="glass rounded-xl p-6 text-center">
+              <TrendUp className="h-8 w-8 text-green-500 mx-auto mb-3" />
+              <h3 className="font-semibold mb-2">Strength Progression</h3>
+              <p className="text-sm text-muted-foreground">Visualize your gains over time with beautiful charts</p>
+            </div>
+            <div className="glass rounded-xl p-6 text-center">
+              <Barbell className="h-8 w-8 text-blue-500 mx-auto mb-3" />
+              <h3 className="font-semibold mb-2">Volume Analysis</h3>
+              <p className="text-sm text-muted-foreground">Optimize your training volume per muscle group</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Progress Tracking</h1>
-        <p className="text-muted-foreground">Monitor your PPL progression and strength gains</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="max-w-6xl mx-auto pt-12 pb-8 px-6">
+        {/* Header */}
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-4xl font-bold tracking-tight mb-3">Progress Dashboard</h1>
+          <p className="text-lg text-muted-foreground">
+            Track your PPL journey and celebrate your gains
+          </p>
+        </div>
 
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Cycle</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Week 6</div>
-            <p className="text-xs text-muted-foreground">
-              PPL Training Program
-            </p>
-          </CardContent>
-        </Card>
+        {/* Key Metrics - Real data! */}
+        <div className="grid md:grid-cols-4 gap-4 mb-8">
+          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
+            <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
+            <div className="text-2xl font-bold mb-1">{sessionStats.thisWeekSessions}</div>
+            <div className="text-sm text-muted-foreground">This Week</div>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
-            <Barbell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{weeklyStats.totalVolume.toLocaleString()} kg</div>
-            <p className="text-xs text-muted-foreground">
-              This cycle
-            </p>
-          </CardContent>
-        </Card>
+          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
+            <Barbell className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
+            <div className="text-2xl font-bold mb-1">{Math.round(sessionStats.totalVolume).toLocaleString()}</div>
+            <div className="text-sm text-muted-foreground">Total Volume (kg)</div>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average RPE</CardTitle>
-            <Pulse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{weeklyStats.averageRpe}</div>
-            <p className="text-xs text-muted-foreground">
-              Perfect intensity
-            </p>
-          </CardContent>
-        </Card>
+          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
+            <Pulse className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
+            <div className="text-2xl font-bold mb-1">{sessionStats.averageRpe || 'N/A'}</div>
+            <div className="text-sm text-muted-foreground">Average RPE</div>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Personal Records</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{weeklyStats.personalRecords}</div>
-            <p className="text-xs text-muted-foreground">
-              This cycle
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
+            <Lightning className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
+            <div className="text-2xl font-bold mb-1">{sessionStats.workoutStreak}</div>
+            <div className="text-sm text-muted-foreground">Day Streak</div>
+          </div>
+        </div>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b">
-        {[
-          { key: 'strength', label: 'Strength Progression', icon: TrendUp },
-          { key: 'volume', label: 'Volume Analysis', icon: Barbell },
-          { key: 'rpe', label: 'RPE Tracking', icon: Pulse },
-          { key: 'body', label: 'Body Metrics', icon: Target },
-          { key: 'analytics', label: 'Advanced Analytics', icon: ChartLine },
-        ].map((tab) => (
-          <Button
-            key={tab.key}
-            variant={activeTab === tab.key ? 'default' : 'ghost'}
-            onClick={() => setActiveTab(tab.key as any)}
-            className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary flex items-center gap-2"
-            data-active={activeTab === tab.key}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </Button>
-        ))}
-      </div>
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 mb-8 bg-muted/50 p-1 rounded-lg">
+          {[
+            { key: 'overview', label: 'Overview', icon: ChartLine },
+            { key: 'strength', label: 'Strength', icon: Trophy },
+            { key: 'volume', label: 'Volume', icon: Barbell },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
+                activeTab === tab.key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
-      {/* Strength Progression Tab */}
-      {activeTab === 'strength' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estimated 1RM Progression</CardTitle>
-              <CardDescription>Based on your best sets each week using PPL training</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={e1rmData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="bench" stroke="#8884d8" name="Bench Press" strokeWidth={3} />
-                  <Line type="monotone" dataKey="squat" stroke="#82ca9d" name="Squat" strokeWidth={3} />
-                  <Line type="monotone" dataKey="deadlift" stroke="#ffc658" name="Deadlift" strokeWidth={3} />
-                  <Line type="monotone" dataKey="ohp" stroke="#ff7300" name="Overhead Press" strokeWidth={3} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {chartData.length > 0 ? (
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="glass rounded-2xl p-6">
+                  <h3 className="text-xl font-semibold mb-4">Weekly Sessions</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="weekLabel" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="sessions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {personalRecords.map((pr) => (
-              <Card key={pr.exercise}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{pr.exercise}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold">{pr.weight}</div>
+                <div className="glass rounded-2xl p-6">
+                  <h3 className="text-xl font-semibold mb-4">Volume Progression</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="weekLabel" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="volume"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              <div className="glass rounded-2xl p-8 text-center">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Not Enough Data Yet</h3>
+                <p className="text-muted-foreground">Complete a few more workouts to see progression charts</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Strength Tab */}
+        {activeTab === 'strength' && (
+          <div className="space-y-6">
+            {personalRecords && personalRecords.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {personalRecords.map((pr) => (
+                  <div key={pr.id} className="glass rounded-xl p-6 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <Trophy className="h-6 w-6 text-yellow-500" />
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(pr.achievedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold mb-2">{pr.movementName}</h3>
+                    <div className="text-2xl font-bold mb-1">{pr.weightKg}kg × {pr.reps}</div>
                     <div className="text-sm text-muted-foreground">
-                      Previous: {pr.previous}
-                    </div>
-                    <div className="text-sm text-green-600 font-medium">
-                      {pr.improvement}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {pr.date}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Volume Analysis Tab */}
-      {activeTab === 'volume' && (
-        <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Weekly Volume by Muscle Group</CardTitle>
-                <CardDescription>Sets per muscle group this week</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={volumeData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="muscle" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="sets" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Volume Distribution</CardTitle>
-                <CardDescription>Volume breakdown by muscle group</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={volumeData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ muscle, volume }) => `${muscle}: ${volume}kg`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="volume"
-                    >
-                      {volumeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Volume Progression Over Time</CardTitle>
-              <CardDescription>Weekly volume trends</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={e1rmData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="bench" stackId="1" stroke="#8884d8" fill="#8884d8" />
-                  <Area type="monotone" dataKey="squat" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
-                  <Area type="monotone" dataKey="deadlift" stackId="1" stroke="#ffc658" fill="#ffc658" />
-                  <Area type="monotone" dataKey="ohp" stackId="1" stroke="#ff7300" fill="#ff7300" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* RPE Tracking Tab */}
-      {activeTab === 'rpe' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>RPE Trends by Day Type</CardTitle>
-              <CardDescription>Rate of Perceived Exertion over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={rpeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis domain={[7, 9]} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="push" stroke="#8884d8" name="Push Day" strokeWidth={3} />
-                  <Line type="monotone" dataKey="pull" stroke="#82ca9d" name="Pull Day" strokeWidth={3} />
-                  <Line type="monotone" dataKey="legs" stroke="#ffc658" name="Legs Day" strokeWidth={3} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              { day: 'Push Day', avgRpe: 8.1, trend: '+0.1', color: 'text-blue-600' },
-              { day: 'Pull Day', avgRpe: 8.0, trend: '+0.2', color: 'text-green-600' },
-              { day: 'Legs Day', avgRpe: 8.2, trend: '0.0', color: 'text-yellow-600' },
-            ].map((day) => (
-              <Card key={day.day}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{day.day}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold">{day.avgRpe}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Average RPE
-                    </div>
-                    <div className={`text-sm font-medium ${day.color}`}>
-                      {day.trend} from last cycle
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Body Metrics Tab */}
-      {activeTab === 'body' && (
-        <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Weight</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">72.5 kg</div>
-                <p className="text-sm text-muted-foreground">
-                  +1.5 kg from last month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Body Fat</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">14.2%</div>
-                <p className="text-sm text-muted-foreground">
-                  -0.8% from last month
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Measurements</CardTitle>
-              <CardDescription>Body measurements over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {[
-                  { part: 'Chest', current: '102 cm', change: '+2 cm' },
-                  { part: 'Arms', current: '35 cm', change: '+1 cm' },
-                  { part: 'Waist', current: '78 cm', change: '-1 cm' },
-                  { part: 'Thighs', current: '58 cm', change: '+1.5 cm' },
-                ].map((measurement) => (
-                  <div key={measurement.part} className="flex justify-between items-center border-b pb-2">
-                    <span className="font-medium">{measurement.part}</span>
-                    <div className="text-right">
-                      <div className="font-medium">{measurement.current}</div>
-                      <div className="text-sm text-green-600">{measurement.change}</div>
+                      Est. 1RM: {Math.round(pr.estimatedOneRepMax)}kg
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Advanced Analytics Tab */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Strength vs Volume Correlation</CardTitle>
-                <CardDescription>Relationship between volume and strength gains</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ScatterChart data={e1rmData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="bench" name="Bench Press (kg)" />
-                    <YAxis dataKey="rpe" name="RPE" />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                    <Scatter dataKey="rpe" fill="#8884d8" />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Consistency Metrics</CardTitle>
-                <CardDescription>Your training consistency</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Workout Streak</span>
-                    <span className="font-bold text-lg">{weeklyStats.streak} days</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Consistency Rate</span>
-                    <span className="font-bold text-lg">{weeklyStats.consistency}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Total Sessions</span>
-                    <span className="font-bold text-lg">{weeklyStats.totalSessions}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Average Session Time</span>
-                    <span className="font-bold text-lg">45 min</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            ) : (
+              <div className="glass rounded-2xl p-8 text-center">
+                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Personal Records Yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Start lifting to track your personal bests and estimated 1RMs
+                </p>
+                <Link to="/plan">
+                  <Button className="btn-hover">
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Training
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
+        )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>PPL Training Effectiveness</CardTitle>
-              <CardDescription>Analysis of your progression</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">+12.5%</div>
-                  <div className="text-sm text-muted-foreground">Strength Gain</div>
-                  <div className="text-xs text-muted-foreground">6 weeks</div>
+        {/* Volume Tab */}
+        {activeTab === 'volume' && (
+          <div className="space-y-6">
+            {muscleGroupData.length > 0 ? (
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="glass rounded-2xl p-6">
+                  <h3 className="text-xl font-semibold mb-4">Sets per Muscle Group</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={muscleGroupData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="muscleGroup" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="totalSets" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">8.1</div>
-                  <div className="text-sm text-muted-foreground">Average RPE</div>
-                  <div className="text-xs text-muted-foreground">Perfect intensity</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">95%</div>
-                  <div className="text-sm text-muted-foreground">Program Adherence</div>
-                  <div className="text-xs text-muted-foreground">Excellent</div>
+
+                <div className="glass rounded-2xl p-6">
+                  <h3 className="text-xl font-semibold mb-4">Volume Distribution</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={muscleGroupData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="totalVolume"
+                        label={({ muscleGroup, totalVolume }) => `${muscleGroup}: ${Math.round(totalVolume)}kg`}
+                      >
+                        {muscleGroupData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            ) : (
+              <div className="glass rounded-2xl p-8 text-center">
+                <Barbell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Volume Data Yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Complete workouts to see volume analysis per muscle group
+                </p>
+                <Link to="/plan">
+                  <Button className="btn-hover">
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Training
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

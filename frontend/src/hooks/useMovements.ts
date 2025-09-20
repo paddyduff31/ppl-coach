@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { api } from '../../../api/endpoints'
+import { api } from '../api/endpoints'
 
 export function useMovements() {
   return useQuery({

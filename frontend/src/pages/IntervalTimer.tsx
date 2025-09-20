@@ -12,7 +12,7 @@ import {
   Plus,
   Minus
 } from '@phosphor-icons/react'
-import { Timer, Norwegian4x4IntervalTimer } from '../features/sessions/components/Timer'
+import { Timer, Norwegian4x4IntervalTimer } from '../components/common/Timer'
 
 interface CustomInterval {
   name: string

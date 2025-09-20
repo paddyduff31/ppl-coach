@@ -12,7 +12,7 @@ import {
   ChartLine
 } from '@phosphor-icons/react'
 import { useUser } from '../hooks/useUser'
-import { useUserSessions } from '../features/sessions/hooks/useSession'
+import { useUserSessions } from '../hooks/useSessions'
 
 const DAY_TYPE_NAMES = {
   1: 'Push',

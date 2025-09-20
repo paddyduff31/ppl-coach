@@ -9,12 +9,14 @@ import Movements from '../pages/Movements'
 import IntervalTimer from '../pages/IntervalTimer'
 import WorkoutHistory from '../pages/WorkoutHistory'
 import { Navigation } from '../components/Navigation'
+import { GlobalShortcuts } from '../components/GlobalShortcuts'
 
 const rootRoute = createRootRoute({
   component: () => (
     <div className="min-h-screen bg-background">
       <Navigation />
       <Outlet />
+      <GlobalShortcuts />
     </div>
   ),
 })

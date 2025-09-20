@@ -1,14 +1,31 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { Check, Trash, Clock, Target, Barbell, Pulse } from '@phosphor-icons/react'
-import { useSession, useLogSet, useDeleteSet } from '../features/sessions/hooks/useSession'
-import { useMovements } from '../features/sessions/hooks/useMovements'
-import { Timer, SessionTimer } from '../features/sessions/components/Timer'
+import {
+  Check,
+  Trash,
+  Clock,
+  Target,
+  Barbell,
+  Pulse,
+  Plus,
+  ArrowRight,
+  Play,
+  TrendUp,
+  Lightning,
+  X,
+  MagnifyingGlass,
+  Shuffle
+} from '@phosphor-icons/react'
+import { useSession, useLogSet, useDeleteSet } from '../hooks/useSession'
+import { useMovements, useShuffleMovements } from '../hooks/useMovements'
+import { useUser } from '../hooks/useUser'
+import { Timer, SessionTimer } from '../components/common/Timer'
+import { LoadingState } from '../components/ui/loading'
 import type { CreateSetLog, Movement } from '../api/schemas'
+import { cn } from '../utils/utils'
 
 interface SetInput {
   movementId: string
@@ -21,18 +38,21 @@ interface SetInput {
 
 const DAY_TYPE_NAMES = {
   1: 'Push',
-  2: 'Pull', 
+  2: 'Pull',
   3: 'Legs'
 } as const
 
 const DAY_TYPE_COLORS = {
-  1: 'bg-blue-500',
-  2: 'bg-green-500',
-  3: 'bg-purple-500'
+  1: 'from-blue-500/20 to-blue-600/20',
+  2: 'from-green-500/20 to-green-600/20',
+  3: 'from-purple-500/20 to-purple-600/20'
 } as const
 
-// Progression calculations would come from user's actual progression plan
-
+const DAY_TYPE_BORDERS = {
+  1: 'border-blue-200',
+  2: 'border-green-200',
+  3: 'border-purple-200'
+} as const
 
 export default function LogSession() {
   const { id } = useParams({ from: '/log/$id' })
@@ -41,12 +61,16 @@ export default function LogSession() {
   const { data: session, isLoading: sessionLoading, error: sessionError } = useSession(id)
   const { data: movementsResponse } = useMovements()
   const movements = movementsResponse?.data || []
+  const { user } = useUser()
+  const shuffleMovementsMutation = useShuffleMovements()
   const logSetMutation = useLogSet()
   const deleteSetMutation = useDeleteSet()
 
   const [sessionActive, setSessionActive] = useState(true)
   const [setInputs, setSetInputs] = useState<Record<string, SetInput>>({})
-  // Week calculation would be based on user's actual progression plan
+  const [showExerciseSearch, setShowExerciseSearch] = useState(false)
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState('')
+  const [focusedExercise, setFocusedExercise] = useState<string | null>(null)
 
   // Group set logs by movement for display
   const setsByMovement = useMemo(() => {
@@ -60,7 +84,6 @@ export default function LogSession() {
       return acc
     }, {} as Record<string, any[]>)
   }, [session])
-
 
   const updateSetInput = (movementId: string, field: keyof SetInput, value: string) => {
     setSetInputs(prev => ({
@@ -97,11 +120,11 @@ export default function LogSession() {
       // Clear input for this movement
       setSetInputs(prev => ({
         ...prev,
-        [movementId]: { 
-          movementId, 
-          weightKg: '', 
-          reps: '', 
-          rpe: '', 
+        [movementId]: {
+          movementId,
+          weightKg: '',
+          reps: '',
+          rpe: '',
           tempo: '',
           notes: ''
         }
@@ -119,6 +142,37 @@ export default function LogSession() {
     }
   }
 
+  const addExerciseToSession = (movement: Movement) => {
+    setSetInputs(prev => ({
+      ...prev,
+      [movement.id]: {
+        movementId: movement.id,
+        weightKg: '',
+        reps: '',
+        rpe: '',
+        tempo: '',
+        notes: ''
+      }
+    }))
+    setShowExerciseSearch(false)
+    setExerciseSearchQuery('')
+  }
+
+  const reshuffleExercises = async () => {
+    if (!user?.id || !session?.data) return
+
+    try {
+      await shuffleMovementsMutation.mutateAsync({
+        dayType: session.data.dayType,
+        userId: user.id,
+        availableEquipment: [1, 2, 3, 4, 5] // Standard gym equipment
+      })
+      // Clear current exercise inputs since we're getting new exercises
+      setSetInputs({})
+    } catch (error) {
+      console.error('Failed to reshuffle exercises:', error)
+    }
+  }
 
   const totalVolume = useMemo(() => {
     if (!session?.data) return 0
@@ -133,379 +187,409 @@ export default function LogSession() {
   }, [session])
 
   if (sessionLoading) {
-    return <div className="container mx-auto p-6">Loading session...</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="max-w-6xl mx-auto pt-12 pb-8 px-6">
+          <LoadingState message="Loading your workout session..." />
+        </div>
+      </div>
+    )
   }
 
   if (sessionError || !session?.data) {
-    return <div className="container mx-auto p-6">Failed to load session</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="max-w-4xl mx-auto pt-12 pb-8 px-6 text-center">
+          <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
+          <p className="text-muted-foreground mb-6">This workout session could not be loaded.</p>
+          <Button onClick={() => navigate({ to: '/' })}>
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   const movementsInSession = Object.keys(setsByMovement)
     .map(id => movements?.find((m: any) => m.id === id))
     .filter(Boolean) as Movement[]
 
+  const filteredMovements = movements.filter((movement: Movement) =>
+    movement.name.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
+    movement.muscleGroups?.some(mg => mg.toLowerCase().includes(exerciseSearchQuery.toLowerCase()))
+  )
 
   const dayType = session.data.dayType as keyof typeof DAY_TYPE_NAMES
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`w-3 h-3 rounded-full ${DAY_TYPE_COLORS[dayType]}`} />
-          <div>
-            <h1 className="text-3xl font-bold">
-              {DAY_TYPE_NAMES[dayType]} Day Session
-            </h1>
-            <p className="text-muted-foreground">{session.data.date}</p>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="max-w-7xl mx-auto pt-8 pb-8 px-6">
+
+        {/* Header */}
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className={cn(
+                  "w-4 h-4 rounded-full",
+                  `bg-gradient-to-r ${DAY_TYPE_COLORS[dayType].replace('from-', 'from-').replace('to-', 'to-').replace('/20', '')}`
+                )} />
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {DAY_TYPE_NAMES[dayType]} Day Session
+                </h1>
+              </div>
+              <p className="text-muted-foreground">
+                {new Date(session.data.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <SessionTimer isActive={sessionActive} onToggle={() => setSessionActive(!sessionActive)} />
+              <Button
+                onClick={reshuffleExercises}
+                variant="outline"
+                className="btn-hover"
+                disabled={shuffleMovementsMutation.isPending}
+              >
+                <Shuffle className="h-4 w-4 mr-2" />
+                {shuffleMovementsMutation.isPending ? 'Shuffling...' : 'Reshuffle'}
+              </Button>
+              <Button
+                onClick={() => navigate({ to: '/' })}
+                variant="outline"
+                className="btn-hover"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Complete Session
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="glass rounded-xl p-4 text-center">
+              <Target className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+              <div className="text-lg font-bold">{movementsInSession.length}</div>
+              <div className="text-xs text-muted-foreground">Exercises</div>
+            </div>
+            <div className="glass rounded-xl p-4 text-center">
+              <Barbell className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+              <div className="text-lg font-bold">{session.data.setLogs.length}</div>
+              <div className="text-xs text-muted-foreground">Sets Logged</div>
+            </div>
+            <div className="glass rounded-xl p-4 text-center">
+              <TrendUp className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+              <div className="text-lg font-bold">{Math.round(totalVolume).toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground">Volume (kg)</div>
+            </div>
+            <div className="glass rounded-xl p-4 text-center">
+              <Pulse className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+              <div className="text-lg font-bold">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</div>
+              <div className="text-xs text-muted-foreground">Avg RPE</div>
+            </div>
           </div>
         </div>
-        <SessionTimer isActive={sessionActive} onToggle={() => setSessionActive(!sessionActive)} />
-      </div>
 
-      {/* Session Info Card */}
-      <Card className="border-2 border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            {DAY_TYPE_NAMES[dayType]} Day Workout
-          </CardTitle>
-          <CardDescription>
-            {session?.data?.notes || `Focus on ${DAY_TYPE_NAMES[dayType].toLowerCase()} movements with proper form and controlled tempo.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="flex items-center gap-2">
-              <Barbell className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Day Type</p>
-                <p className="text-xs text-muted-foreground">{DAY_TYPE_NAMES[dayType]}</p>
+        <div className="grid lg:grid-cols-4 gap-6">
+          {/* Main workout area */}
+          <div className="lg:col-span-3 space-y-6">
+
+            {/* Add Exercise Button */}
+            <div className="glass rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Exercises</h2>
+                <Button
+                  onClick={() => setShowExerciseSearch(!showExerciseSearch)}
+                  className="btn-hover"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Exercise
+                </Button>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Pulse className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Sets Logged</p>
-                <p className="text-xs text-muted-foreground">{session?.data?.setLogs?.length || 0}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Session Time</p>
-                <p className="text-xs text-muted-foreground">Active</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Movements</p>
-                <p className="text-xs text-muted-foreground">{movementsInSession.length}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* How to Log Sets Guide */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-700 text-lg">
-            <Check className="h-5 w-5" />
-            How to Log Your Sets
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-700">1. Log Each Set</h4>
-              <p className="text-sm text-blue-600">
-                Enter weight, reps, and RPE (how hard it felt) for each set
-              </p>
+              {/* Exercise Search */}
+              {showExerciseSearch && (
+                <div className="mb-6 p-4 border rounded-lg bg-muted/30 animate-fade-in">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MagnifyingGlass className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search exercises..."
+                      value={exerciseSearchQuery}
+                      onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowExerciseSearch(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid gap-2 max-h-64 overflow-y-auto">
+                    {filteredMovements.slice(0, 10).map((movement) => (
+                      <div
+                        key={movement.id}
+                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => addExerciseToSession(movement)}
+                      >
+                        <div>
+                          <div className="font-medium">{movement.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {movement.muscleGroups?.join(', ')}
+                          </div>
+                        </div>
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-700">2. Track Progress</h4>
-              <p className="text-sm text-blue-600">
-                Your sets are saved automatically and tracked over time
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-4">
-          {/* Movements currently in session */}
-          {movementsInSession.map((movement) => {
-            const sets = setsByMovement[movement.id] || []
-            const input = setInputs[movement.id] || { 
-              movementId: movement.id, 
-              weightKg: '', 
-              reps: '', 
-              rpe: '', 
-              tempo: '',
-              notes: ''
-            }
+            {/* Exercises */}
+            {movementsInSession.map((movement) => {
+              const sets = setsByMovement[movement.id] || []
+              const input = setInputs[movement.id] || {
+                movementId: movement.id,
+                weightKg: '',
+                reps: '',
+                rpe: '',
+                tempo: '',
+                notes: ''
+              }
+              const isFocused = focusedExercise === movement.id
 
-            // Target weight would come from user's progression plan in a real app
-
-            return (
-              <Card key={movement.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+              return (
+                <div
+                  key={movement.id}
+                  className={cn(
+                    "glass rounded-2xl p-6 transition-all duration-300",
+                    isFocused && "ring-2 ring-primary shadow-lg scale-[1.02]"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-6">
                     <div>
-                      <div className="flex items-center gap-2">
-                        {movement.name}
+                      <h3 className="text-xl font-semibold mb-1">{movement.name}</h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{movement.muscleGroups?.join(', ')}</span>
                         {movement.isCompound && (
-                          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                          <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
                             Compound
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {movement.muscleGroups.join(', ')}
-                      </div>
                     </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Movement Info */}
-                    <div className="bg-muted/50 p-3 rounded-lg">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Muscle Groups:</span>
-                        <span className="font-medium">{movement.muscleGroups?.join(', ') || 'N/A'}</span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={isFocused ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFocusedExercise(isFocused ? null : movement.id)}
+                      >
+                        <Target className="h-4 w-4 mr-1" />
+                        {isFocused ? 'Unfocus' : 'Focus'}
+                      </Button>
                     </div>
+                  </div>
 
-                    {/* Existing sets */}
-                    {sets.length > 0 && (
+                  {/* Previous sets */}
+                  {sets.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="font-medium mb-3">Sets Completed</h4>
                       <div className="space-y-2">
-                        <div className="grid grid-cols-6 gap-2 text-sm font-medium text-muted-foreground">
-                          <span>Set</span>
-                          <span>Weight</span>
-                          <span>Reps</span>
-                          <span>RPE</span>
-                          <span>Tempo</span>
-                          <span></span>
-                        </div>
-                        {sets.map((set: any) => (
-                          <div key={set.id} className="grid grid-cols-6 gap-2 items-center">
-                            <span className="text-sm">{set.setIndex}</span>
-                            <span className="text-sm">{set.weightKg} kg</span>
-                            <span className="text-sm">{set.reps}</span>
-                            <span className="text-sm">{set.rpe || '-'}</span>
-                            <span className="text-sm">{set.tempo || '-'}</span>
+                        {sets.map((set: any, index) => (
+                          <div
+                            key={set.id}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
+                          >
+                            <div className="flex items-center gap-6 text-sm">
+                              <span className="font-medium w-8">#{index + 1}</span>
+                              <span className="font-mono">{set.weightKg}kg × {set.reps}</span>
+                              {set.rpe && <span className="text-muted-foreground">RPE {set.rpe}</span>}
+                              {set.tempo && <span className="text-muted-foreground">{set.tempo}</span>}
+                              {set.notes && <span className="text-muted-foreground italic">"{set.notes}"</span>}
+                            </div>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => deleteSet(set.id)}
                               disabled={deleteSetMutation.isPending}
+                              className="text-destructive hover:text-destructive"
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* New set input */}
-                    <div className="border-t pt-4 bg-muted/30 rounded-lg p-4">
-                      <div className="mb-3">
-                        <h4 className="font-medium text-sm mb-2">Log Your Set</h4>
-                        <p className="text-xs text-muted-foreground">
-                          Enter your weight, reps, and how hard it felt (RPE)
-                        </p>
+                  {/* Add new set */}
+                  <div className="p-4 rounded-lg border border-dashed border-primary/30 bg-primary/5">
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <Plus className="h-4 w-4 text-primary" />
+                      Log Set #{sets.length + 1}
+                    </h4>
+
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground">Weight (kg)</Label>
+                        <Input
+                          type="number"
+                          placeholder="80"
+                          value={input.weightKg}
+                          onChange={(e) => updateSetInput(movement.id, 'weightKg', e.target.value)}
+                          className="h-9 font-mono"
+                        />
                       </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
-                        <div>
-                          <Label className="text-xs font-medium">Weight (kg)</Label>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 80"
-                            value={input.weightKg}
-                            onChange={(e) => updateSetInput(movement.id, 'weightKg', e.target.value)}
-                            className="h-9"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium">Reps</Label>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 8"
-                            value={input.reps}
-                            onChange={(e) => updateSetInput(movement.id, 'reps', e.target.value)}
-                            className="h-9"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium">RPE (1-10)</Label>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 8"
-                            min="1"
-                            max="10"
-                            step="0.5"
-                            value={input.rpe}
-                            onChange={(e) => updateSetInput(movement.id, 'rpe', e.target.value)}
-                            className="h-9"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium">Tempo (optional)</Label>
-                          <Input
-                            placeholder="3-1-1"
-                            value={input.tempo}
-                            onChange={(e) => updateSetInput(movement.id, 'tempo', e.target.value)}
-                            className="h-9"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium">Notes (optional)</Label>
-                          <Input
-                            placeholder="Good form"
-                            value={input.notes}
-                            onChange={(e) => updateSetInput(movement.id, 'notes', e.target.value)}
-                            className="h-9"
-                          />
-                        </div>
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground">Reps</Label>
+                        <Input
+                          type="number"
+                          placeholder="8"
+                          value={input.reps}
+                          onChange={(e) => updateSetInput(movement.id, 'reps', e.target.value)}
+                          className="h-9 font-mono"
+                        />
                       </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-muted-foreground">
-                          RPE = Rate of Perceived Exertion (1=easy, 10=max effort)
-                        </div>
-                        <Button
-                          onClick={() => logSet(movement.id)}
-                          disabled={!input.weightKg || !input.reps || logSetMutation.isPending}
-                          size="sm"
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          {logSetMutation.isPending ? 'Logging...' : 'Log Set'}
-                        </Button>
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground">RPE (1-10)</Label>
+                        <Input
+                          type="number"
+                          placeholder="8"
+                          min="1"
+                          max="10"
+                          step="0.5"
+                          value={input.rpe}
+                          onChange={(e) => updateSetInput(movement.id, 'rpe', e.target.value)}
+                          className="h-9 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground">Tempo</Label>
+                        <Input
+                          placeholder="3-1-1"
+                          value={input.tempo}
+                          onChange={(e) => updateSetInput(movement.id, 'tempo', e.target.value)}
+                          className="h-9 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground">Notes</Label>
+                        <Input
+                          placeholder="Good form"
+                          value={input.notes}
+                          onChange={(e) => updateSetInput(movement.id, 'notes', e.target.value)}
+                          className="h-9"
+                        />
                       </div>
                     </div>
 
                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {}}
+                      onClick={() => logSet(movement.id)}
+                      disabled={!input.weightKg || !input.reps || logSetMutation.isPending}
+                      className="btn-hover w-full"
                     >
-                      Focus on this exercise
+                      {logSetMutation.isPending ? (
+                        'Logging...'
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Log Set
+                        </>
+                      )}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-
-          {/* No exercises yet - show how to add them */}
-          {movementsInSession.length === 0 && (
-            <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="text-center text-primary flex items-center justify-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Ready to Start Your {DAY_TYPE_NAMES[dayType]} Workout
-                </CardTitle>
-                <CardDescription className="text-center">
-                  Add exercises to your workout by clicking the button below
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <Button 
-                    onClick={() => {
-                      // This would trigger the shuffle API and add exercises
-                      // For now, just show a message
-                      alert('Exercise generation will be implemented in the next update!')
-                    }}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    Generate Workout Plan
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-3">
-                    The system will automatically select exercises based on your day type and recent workouts
-                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              )
+            })}
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rest Timer</CardTitle>
-            </CardHeader>
-            <CardContent>
+            {/* Empty state */}
+            {movementsInSession.length === 0 && (
+              <div className="glass rounded-2xl p-12 text-center">
+                <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Ready to Start Training</h3>
+                <p className="text-muted-foreground mb-6">
+                  Add exercises to your {DAY_TYPE_NAMES[dayType]} workout to get started
+                </p>
+                <Button
+                  onClick={() => setShowExerciseSearch(true)}
+                  size="lg"
+                  className="btn-hover"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add First Exercise
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Rest Timer */}
+            <div className="glass rounded-2xl p-6">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Rest Timer
+              </h3>
               <Timer initialSeconds={180} />
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Session Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
+            {/* Quick Actions */}
+            <div className="glass rounded-2xl p-6">
+              <h3 className="font-semibold mb-4">Quick Actions</h3>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate({ to: '/progress' })}
+                >
+                  <TrendUp className="h-4 w-4 mr-2" />
+                  View Progress
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate({ to: '/history' })}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Session History
+                </Button>
+              </div>
+            </div>
+
+            {/* Session Summary */}
+            <div className="glass rounded-2xl p-6">
+              <h3 className="font-semibold mb-4">Session Summary</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span>Exercises:</span>
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-medium">Active</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Exercises:</span>
                   <span className="font-medium">{movementsInSession.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Total Sets:</span>
+                  <span className="text-muted-foreground">Total Sets:</span>
                   <span className="font-medium">{session.data.setLogs.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Volume:</span>
-                  <span className="font-medium">{totalVolume.toLocaleString()} kg</span>
+                  <span className="text-muted-foreground">Volume:</span>
+                  <span className="font-medium">{Math.round(totalVolume).toLocaleString()} kg</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Avg RPE:</span>
-                  <span className="font-medium">{averageRpe.toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Date:</span>
-                  <span className="font-medium">{session?.data?.date || 'N/A'}</span>
+                  <span className="text-muted-foreground">Avg RPE:</span>
+                  <span className="font-medium">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                className="w-full"
-                onClick={() => {}}
-              >
-                <Target className="h-4 w-4 mr-2" />
-                Clear Focus
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate({ to: '/progress' })}
-              >
-                <Pulse className="h-4 w-4 mr-2" />
-                View Progress
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={() => navigate({ to: '/' })}
-          >
-            <Check className="h-4 w-4 mr-2" />
-            Complete Session
-          </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

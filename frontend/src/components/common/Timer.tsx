@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button } from '../../../components/ui/button'
+import { Button } from '../ui/button'
 import { Timer as TimerIcon, Play, Pause, ArrowCounterClockwise, Clock, Bell, Plus, Minus } from '@phosphor-icons/react'
 
 interface TimerProps {

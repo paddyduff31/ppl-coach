@@ -13,8 +13,8 @@ import {
   Calendar,
   Trophy,
 } from '@phosphor-icons/react'
-import { useShuffleMovements } from '../features/sessions/hooks/useMovements'
-import { useCreateSession } from '../features/sessions/hooks/useSession'
+import { useShuffleMovements } from '../hooks/useMovements'
+import { useCreateSession } from '../hooks/useSession'
 import { useUser } from '../hooks/useUser'
 import { useWorkoutPlan } from '../hooks/useWorkoutPlan'
 import type { Movement } from '../api/schemas'

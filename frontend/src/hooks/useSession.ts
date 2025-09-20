@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../../api/endpoints'
-import type { CreateSession, CreateSetLog } from '../../../api/schemas'
+import { api } from '../api/endpoints'
+import type { CreateSession, CreateSetLog } from '../api/schemas'
 
 export function useCreateSession() {
   const queryClient = useQueryClient()
