@@ -7,8 +7,9 @@ export function useAuth() {
   const { user, isLoading, error } = useUser()
 
   useEffect(() => {
-    // If not loading and there's an error (user not found), redirect to onboarding
-    if (!isLoading && error) {
+    // Only redirect to onboarding if there's a specific 404 error (user not found)
+    // Don't redirect on network errors or other temporary issues
+    if (!isLoading && error && error.message?.includes('404')) {
       navigate({ to: '/onboarding' })
     }
   }, [isLoading, error, navigate])

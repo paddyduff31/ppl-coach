@@ -64,14 +64,7 @@ export default function Dashboard() {
         notes: `${nextDayName} day workout`
       })
 
-      // Pre-populate with recommended exercises
-      // Using common equipment types: 1=Barbell, 2=Dumbbell, 3=Cable, 4=Bodyweight, 5=Machine
-      await shuffleMovementsMutation.mutateAsync({
-        dayType: nextDayType,
-        userId: user.id,
-        availableEquipment: [1, 2, 3, 4, 5] // Standard gym equipment
-      })
-
+      // Navigate to session - exercises will be auto-loaded there
       navigate({ to: '/log/$id', params: { id: session.data.id } })
     } catch (error) {
       console.error('Failed to start workout:', error)
@@ -119,14 +112,12 @@ export default function Dashboard() {
                 </div>
                 <Button
                   onClick={startNextWorkout}
-                  disabled={createSessionMutation.isPending || shuffleMovementsMutation.isPending || userLoading}
+                  disabled={createSessionMutation.isPending || userLoading}
                   size="lg"
                   className="btn-hover h-12 px-8 text-base font-semibold"
                 >
                   {createSessionMutation.isPending ? (
-                    'Creating Session...'
-                  ) : shuffleMovementsMutation.isPending ? (
-                    'Preparing Exercises...'
+                    'Starting...'
                   ) : (
                     <>
                       <Play className="h-5 w-5 mr-2" />
@@ -274,7 +265,7 @@ export default function Dashboard() {
             <div className="text-center">
               <Button
                 onClick={startNextWorkout}
-                disabled={createSessionMutation.isPending || shuffleMovementsMutation.isPending || userLoading}
+                disabled={createSessionMutation.isPending || userLoading}
                 size="lg"
                 className="btn-hover h-12 px-8 text-base font-semibold"
               >

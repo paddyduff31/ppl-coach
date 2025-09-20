@@ -25,8 +25,8 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: () => {
-    // Check if user exists, redirect to onboarding if not
-    const userId = localStorage.getItem('ppl-coach-user-id')
+    // Check if user exists, fallback to default user for development
+    const userId = localStorage.getItem('ppl-coach-user-id') || '31b641fe-111e-4cce-b582-1be8bbae72e7'
     if (!userId) {
       window.location.href = '/onboarding'
       return null

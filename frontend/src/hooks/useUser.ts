@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/endpoints'
 
-// Check if user exists in localStorage
+// Check if user exists in localStorage, fallback to default user for development
 const getStoredUserId = (): string | null => {
-  return localStorage.getItem('ppl-coach-user-id')
+  const stored = localStorage.getItem('ppl-coach-user-id')
+  // Fallback to your default user ID for development
+  return stored || '31b641fe-111e-4cce-b582-1be8bbae72e7'
 }
 
 const setStoredUserId = (id: string): void => {
@@ -13,6 +15,11 @@ const setStoredUserId = (id: string): void => {
 export function useUser() {
   const queryClient = useQueryClient()
   const storedUserId = getStoredUserId()
+
+  // If we're using the fallback user ID, store it in localStorage
+  if (storedUserId === '31b641fe-111e-4cce-b582-1be8bbae72e7' && !localStorage.getItem('ppl-coach-user-id')) {
+    setStoredUserId(storedUserId)
+  }
 
   // Get user profile - only if we have a stored user ID
   const { data: userProfile, isLoading, error } = useQuery({

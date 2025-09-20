@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -66,13 +66,16 @@ export default function LogSession() {
   const logSetMutation = useLogSet()
   const deleteSetMutation = useDeleteSet()
 
+  // All useState hooks must be called consistently
   const [sessionActive, setSessionActive] = useState(true)
   const [setInputs, setSetInputs] = useState<Record<string, SetInput>>({})
   const [showExerciseSearch, setShowExerciseSearch] = useState(false)
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('')
+  const [recommendedMovements, setRecommendedMovements] = useState<Movement[]>([])
+  const [hasLoadedRecommendations, setHasLoadedRecommendations] = useState(false)
   const [focusedExercise, setFocusedExercise] = useState<string | null>(null)
 
-  // Group set logs by movement for display
+  // All useMemo hooks must be called consistently
   const setsByMovement = useMemo(() => {
     if (!session?.data) return {}
 
@@ -84,6 +87,98 @@ export default function LogSession() {
       return acc
     }, {} as Record<string, any[]>)
   }, [session])
+
+  const movementsInSession = useMemo(() => {
+    if (!session?.data) return []
+
+    const sessionHasSets = session.data.setLogs.length > 0
+
+    if (sessionHasSets) {
+      // Show movements from actual sets
+      return Object.keys(setsByMovement)
+        .map(id => movements?.find((m: any) => m.id === id))
+        .filter(Boolean) as Movement[]
+    } else {
+      // Show recommended movements for empty sessions
+      return recommendedMovements
+    }
+  }, [setsByMovement, movements, recommendedMovements, session?.data?.setLogs])
+
+  const totalVolume = useMemo(() => {
+    if (!session?.data) return 0
+    return session.data.setLogs.reduce((total: number, set: any) => total + (set.weightKg * set.reps), 0)
+  }, [session])
+
+  const averageRpe = useMemo(() => {
+    if (!session?.data) return 0
+    const setsWithRpe = session.data.setLogs.filter((set: any) => set.rpe)
+    if (setsWithRpe.length === 0) return 0
+    return setsWithRpe.reduce((sum: number, set: any) => sum + set.rpe, 0) / setsWithRpe.length
+  }, [session])
+
+  // Load recommended movements when session is empty
+  useEffect(() => {
+    if (!user?.id || !session?.data || hasLoadedRecommendations) return
+
+    const sessionHasSets = session.data.setLogs.length > 0
+    if (sessionHasSets) return // Session already has exercises
+
+    const loadRecommendations = async () => {
+      try {
+        const result = await shuffleMovementsMutation.mutateAsync({
+          dayType: session.data.dayType,
+          userId: user.id,
+          availableEquipment: [1, 2, 3, 4, 5] // Standard gym equipment
+        })
+
+        setRecommendedMovements(result.data || [])
+        setHasLoadedRecommendations(true)
+
+        // Pre-populate setInputs for recommended movements
+        const prePopulatedInputs: Record<string, SetInput> = {}
+        result.data?.forEach((movement: any) => {
+          prePopulatedInputs[movement.id] = {
+            movementId: movement.id,
+            weightKg: '',
+            reps: '',
+            rpe: '',
+            tempo: '',
+            notes: ''
+          }
+        })
+        setSetInputs(prePopulatedInputs)
+      } catch (error) {
+        console.error('Failed to load recommended movements:', error)
+      }
+    }
+
+    loadRecommendations()
+  }, [user?.id, session?.data, hasLoadedRecommendations]) // Removed shuffleMovementsMutation from deps
+
+  // Early returns for loading and error states
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="max-w-6xl mx-auto pt-12 pb-8 px-6">
+          <LoadingState message="Loading your workout session..." />
+        </div>
+      </div>
+    )
+  }
+
+  if (sessionError || !session?.data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="max-w-4xl mx-auto pt-12 pb-8 px-6 text-center">
+          <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
+          <p className="text-muted-foreground mb-6">This workout session could not be loaded.</p>
+          <Button onClick={() => navigate({ to: '/' })}>
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   const updateSetInput = (movementId: string, field: keyof SetInput, value: string) => {
     setSetInputs(prev => ({
@@ -162,29 +257,31 @@ export default function LogSession() {
     if (!user?.id || !session?.data) return
 
     try {
-      await shuffleMovementsMutation.mutateAsync({
+      const result = await shuffleMovementsMutation.mutateAsync({
         dayType: session.data.dayType,
         userId: user.id,
         availableEquipment: [1, 2, 3, 4, 5] // Standard gym equipment
       })
-      // Clear current exercise inputs since we're getting new exercises
-      setSetInputs({})
+
+      setRecommendedMovements(result.data || [])
+
+      // Pre-populate setInputs for new recommended movements
+      const prePopulatedInputs: Record<string, SetInput> = {}
+      result.data?.forEach((movement: any) => {
+        prePopulatedInputs[movement.id] = {
+          movementId: movement.id,
+          weightKg: '',
+          reps: '',
+          rpe: '',
+          tempo: '',
+          notes: ''
+        }
+      })
+      setSetInputs(prePopulatedInputs)
     } catch (error) {
       console.error('Failed to reshuffle exercises:', error)
     }
   }
-
-  const totalVolume = useMemo(() => {
-    if (!session?.data) return 0
-    return session.data.setLogs.reduce((total: number, set: any) => total + (set.weightKg * set.reps), 0)
-  }, [session])
-
-  const averageRpe = useMemo(() => {
-    if (!session?.data) return 0
-    const setsWithRpe = session.data.setLogs.filter((set: any) => set.rpe)
-    if (setsWithRpe.length === 0) return 0
-    return setsWithRpe.reduce((sum: number, set: any) => sum + set.rpe, 0) / setsWithRpe.length
-  }, [session])
 
   if (sessionLoading) {
     return (
@@ -209,10 +306,6 @@ export default function LogSession() {
       </div>
     )
   }
-
-  const movementsInSession = Object.keys(setsByMovement)
-    .map(id => movements?.find((m: any) => m.id === id))
-    .filter(Boolean) as Movement[]
 
   const filteredMovements = movements.filter((movement: Movement) =>
     movement.name.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
