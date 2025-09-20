@@ -1,0 +1,102 @@
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using PplCoach.Application.DTOs;
+using PplCoach.Application.Services;
+using PplCoach.Application.Utils;
+using PplCoach.Domain.Enums;
+using PplCoach.Infrastructure.Data;
+using PplCoach.Infrastructure.Repositories;
+
+namespace PplCoach.Infrastructure.Services;
+
+public class ProgressService : IProgressService
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private readonly PplCoachDbContext _context;
+
+    public ProgressService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
+    {
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
+        _context = context;
+    }
+
+    public async Task<List<PersonalRecordDto>> GetPersonalRecordsAsync(Guid userId)
+    {
+        var records = await _context.SetLogs
+            .Include(sl => sl.Session)
+            .Include(sl => sl.Movement)
+            .Where(sl => sl.Session.UserId == userId)
+            .GroupBy(sl => sl.MovementId)
+            .Select(g => new
+            {
+                MovementId = g.Key,
+                MovementName = g.First().Movement.Name,
+                HeaviestSet = g.OrderByDescending(sl => sl.WeightKg).ThenByDescending(sl => sl.Reps).First(),
+                MostRepsSet = g.OrderByDescending(sl => sl.Reps).ThenByDescending(sl => sl.WeightKg).First()
+            })
+            .ToListAsync();
+
+        var personalRecords = records.Select(r => new PersonalRecordDto
+        {
+            MovementName = r.MovementName,
+            HeaviestWeight = r.HeaviestSet.WeightKg,
+            RepsAtHeaviest = r.HeaviestSet.Reps,
+            EstimatedOneRepMax = ProgressCalculator.CalculateEstimatedOneRepMax(r.HeaviestSet.WeightKg, r.HeaviestSet.Reps),
+            Date = r.HeaviestSet.Session.Date
+        }).ToList();
+
+        return personalRecords;
+    }
+
+    public async Task<List<MuscleGroupProgressDto>> GetMuscleGroupProgressAsync(Guid userId, DateOnly startDate, DateOnly endDate)
+    {
+        var setLogs = await _context.SetLogs
+            .Include(sl => sl.Session)
+            .Include(sl => sl.Movement)
+            .Where(sl => sl.Session.UserId == userId &&
+                        sl.Session.Date >= startDate &&
+                        sl.Session.Date <= endDate)
+            .ToListAsync();
+
+        var weeklyProgress = setLogs
+            .GroupBy(sl => new
+            {
+                MuscleGroup = sl.Movement.MuscleGroup,
+                Week = GetWeekStart(sl.Session.Date)
+            })
+            .Select(g => new MuscleGroupProgressDto
+            {
+                MuscleGroup = g.Key.MuscleGroup,
+                WeekStarting = g.Key.Week,
+                WeeklyEffectiveSets = (int)g.Sum(sl => ProgressCalculator.CalculateEffectiveSets(sl.Reps, sl.RPE))
+            })
+            .OrderBy(p => p.WeekStarting)
+            .ThenBy(p => p.MuscleGroup)
+            .ToList();
+
+        return weeklyProgress;
+    }
+
+    public async Task<ProgressSummaryDto> GetProgressSummaryAsync(Guid userId)
+    {
+        var personalRecords = await GetPersonalRecordsAsync(userId);
+        var lastMonth = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var muscleGroupProgress = await GetMuscleGroupProgressAsync(userId, lastMonth, today);
+
+        return new ProgressSummaryDto
+        {
+            PersonalRecords = personalRecords,
+            MuscleGroupProgress = muscleGroupProgress
+        };
+    }
+
+    private static DateOnly GetWeekStart(DateOnly date)
+    {
+        var dayOfWeek = (int)date.DayOfWeek;
+        var daysToSubtract = dayOfWeek == 0 ? 6 : dayOfWeek - 1;
+        return date.AddDays(-daysToSubtract);
+    }
+}

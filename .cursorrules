@@ -1,0 +1,212 @@
+# PPL Coach - Cursor Rules
+
+## Project Overview
+This is a full-stack Push/Pull/Legs workout tracking application with:
+- **Backend**: ASP.NET Core 8 Web API with Clean Architecture
+- **Frontend**: React 19 + TypeScript + Vite + TanStack Router + React Query + Tailwind CSS
+- **Database**: PostgreSQL with Entity Framework Core
+- **Architecture**: Clean Architecture (Domain, Application, Infrastructure, API layers)
+
+## Backend (.NET) Guidelines
+
+### Architecture & Structure
+- Follow Clean Architecture principles strictly
+- Domain layer should have NO dependencies on other layers
+- Application layer depends only on Domain
+- Infrastructure layer implements Application interfaces
+- API layer orchestrates and handles HTTP concerns
+
+### Code Organization
+```
+backend/src/
+├── PplCoach.Domain/          # Entities, Enums, Value Objects (NO dependencies)
+├── PplCoach.Application/     # DTOs, Services, Validators, Mapping
+├── PplCoach.Infrastructure/  # EF Core, Repositories, External Services
+└── PplCoach.Api/            # Endpoints, Middleware, Configuration
+```
+
+### Naming Conventions
+- **Entities**: PascalCase (e.g., `UserProfile`, `WorkoutSession`)
+- **DTOs**: PascalCase with "Dto" suffix (e.g., `UserProfileDto`)
+- **Services**: PascalCase with "Service" suffix (e.g., `IUserProfileService`)
+- **Endpoints**: PascalCase with "Endpoints" suffix (e.g., `ProfileEndpoints`)
+- **Methods**: PascalCase (e.g., `GetUserProfile`, `CreateSession`)
+- **Properties**: PascalCase (e.g., `BodyweightKg`, `CreatedAt`)
+
+### Entity Framework
+- Use `Guid` for primary keys
+- Use `DateOnly` for dates, `DateTime` for timestamps
+- Use `decimal` for monetary/weight values
+- Configure relationships in `PplCoachDbContext`
+- Use migrations for schema changes
+
+### API Design
+- Use Minimal APIs with endpoint classes
+- Group related endpoints in separate files
+- Use proper HTTP status codes
+- Include Swagger documentation
+- Use FluentValidation for request validation
+- Return DTOs, never entities directly
+
+### Validation
+- Use FluentValidation for all input validation
+- Create validators in `PplCoach.Application/Validators/`
+- Register validators in DI container
+- Validate at API boundary
+
+### Error Handling
+- Use proper HTTP status codes
+- Return consistent error response format
+- Log errors with Serilog
+- Don't expose internal exceptions to clients
+
+### Testing
+- Write unit tests for business logic
+- Use xUnit and FluentAssertions
+- Test services, validators, and utilities
+- Mock external dependencies
+
+## Frontend (React/TypeScript) Guidelines
+
+### Architecture & Structure
+```
+frontend/ppl-coach-web/src/
+├── app/                     # Router and query client setup
+├── components/              # Reusable UI components
+├── features/               # Feature-specific logic and components
+├── hooks/                  # Custom React hooks
+├── pages/                  # Route components
+├── api/                    # API client and types
+└── lib/                    # Utilities and configurations
+```
+
+### Component Guidelines
+- Use functional components with TypeScript
+- Prefer composition over inheritance
+- Use custom hooks for business logic
+- Keep components small and focused
+- Use proper TypeScript types for all props
+
+### State Management
+- Use TanStack Query for server state
+- Use React state for local UI state
+- Use React Context for global app state if needed
+- Prefer lifting state up over prop drilling
+
+### Styling
+- Use Tailwind CSS for styling
+- Use `clsx` and `tailwind-merge` for conditional classes
+- Follow mobile-first responsive design
+- Use consistent spacing and color schemes
+- Create reusable component variants with `class-variance-authority`
+
+### API Integration
+- Use Axios for HTTP requests
+- Create typed API functions in `api/` directory
+- Use TanStack Query for caching and synchronization
+- Handle loading and error states properly
+
+### Routing
+- Use TanStack Router for navigation
+- Define routes in `app/router.ts`
+- Use proper route parameters and search params
+- Implement proper route guards for authentication
+
+### Form Handling
+- Use React Hook Form for form management
+- Use Zod for form validation
+- Use `@hookform/resolvers` for integration
+- Provide proper error messages and validation feedback
+
+### Performance
+- Use React.memo for expensive components
+- Use useMemo and useCallback when appropriate
+- Implement proper loading states
+- Use TanStack Virtual for large lists
+- Optimize bundle size with proper imports
+
+## General Guidelines
+
+### Code Quality
+- Write clean, readable, and maintainable code
+- Use meaningful variable and function names
+- Add comments for complex business logic
+- Follow SOLID principles
+- Keep functions small and focused
+
+### Git Workflow
+- Use descriptive commit messages
+- Create feature branches for new features
+- Use pull requests for code review
+- Keep commits atomic and focused
+
+### Documentation
+- Update README files when adding new features
+- Document API endpoints with Swagger
+- Add inline comments for complex logic
+- Keep architecture documentation up to date
+
+### Security
+- Validate all inputs on both frontend and backend
+- Use proper authentication and authorization
+- Sanitize data before database operations
+- Use HTTPS in production
+- Don't expose sensitive information in logs
+
+### Performance
+- Optimize database queries
+- Use proper indexing
+- Implement caching where appropriate
+- Monitor application performance
+- Use pagination for large datasets
+
+### Testing
+- Write tests for critical business logic
+- Test API endpoints
+- Test React components with user interactions
+- Maintain good test coverage
+- Use proper test data and mocking
+
+## Technology-Specific Notes
+
+### Backend Dependencies
+- ASP.NET Core 8
+- Entity Framework Core with PostgreSQL
+- FluentValidation
+- AutoMapper
+- Serilog
+- Swagger/OpenAPI
+
+### Frontend Dependencies
+- React 19
+- TypeScript
+- Vite
+- TanStack Router
+- TanStack Query
+- React Hook Form
+- Tailwind CSS
+- Axios
+
+### Database
+- PostgreSQL
+- Entity Framework Core migrations
+- Proper indexing for performance
+- Use transactions for data consistency
+
+## Common Patterns
+
+### Backend Patterns
+- Repository pattern with Unit of Work
+- Service layer for business logic
+- DTO pattern for data transfer
+- Dependency injection for loose coupling
+- CQRS for complex operations
+
+### Frontend Patterns
+- Custom hooks for reusable logic
+- Compound components for complex UI
+- Render props for flexible components
+- Higher-order components for cross-cutting concerns
+- Context for global state management
+
+Remember: This is a fitness/workout tracking application, so prioritize user experience, data accuracy, and performance for workout logging and progress tracking features.

@@ -1,0 +1,6 @@
+@PplCoach.Api_HostAddress = http://localhost:5037
+
+GET {{PplCoach.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
