@@ -3,12 +3,8 @@ using PplCoach.Domain.Entities;
 
 namespace PplCoach.Infrastructure.Data;
 
-public class PplCoachDbContext : DbContext
+public class PplCoachDbContext(DbContextOptions<PplCoachDbContext> options) : DbContext(options)
 {
-    public PplCoachDbContext(DbContextOptions<PplCoachDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<UserProfile> UserProfiles { get; set; }
     public DbSet<EquipmentItem> EquipmentItems { get; set; }
     public DbSet<Movement> Movements { get; set; }

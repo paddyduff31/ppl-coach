@@ -4,16 +4,10 @@ using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Repositories;
 
-public class Repository<T> : IRepository<T> where T : class
+public class Repository<T>(PplCoachDbContext context) : IRepository<T>
+    where T : class
 {
-    protected readonly PplCoachDbContext _context;
-    protected readonly DbSet<T> _dbSet;
-
-    public Repository(PplCoachDbContext context)
-    {
-        _context = context;
-        _dbSet = context.Set<T>();
-    }
+    private readonly DbSet<T> _dbSet = context.Set<T>();
 
     public virtual async Task<T?> GetByIdAsync(Guid id)
     {

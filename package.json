@@ -1,0 +1,45 @@
+{
+  "name": "ppl-coach-monorepo",
+  "version": "1.0.0",
+  "description": "PPL Coach - Full Stack Fitness Application",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "./dev-monorepo.sh",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && dotnet run --project src/PplCoach.Api/PplCoach.Api.csproj",
+    "dev:db": "docker compose up -d db",
+    "install:frontend": "cd frontend && npm install",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && dotnet build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && dotnet test",
+    "test": "npm run test:backend && npm run test:frontend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "clean": "cd frontend && npm run dev:clean && cd ../backend && dotnet clean",
+    "reset": "npm run clean && docker compose down -v && npm run install:frontend"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3"
+  },
+  "keywords": [
+    "fitness",
+    "workout",
+    "react",
+    "dotnet",
+    "typescript",
+    "monorepo"
+  ],
+  "author": "PPL Coach Team",
+  "license": "MIT"
+}
+

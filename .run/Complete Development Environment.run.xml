@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Complete Development Environment" type="CompoundRunConfigurationType">
+    <toRun name="Start Database" type="docker-deploy" />
+    <toRun name="Backend API" type="LaunchSettings" />
+    <toRun name="Frontend Dev Server" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>
+

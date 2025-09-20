@@ -19,7 +19,11 @@ public static class DatabaseSeeder
         }
 
         await SeedUserProfilesAsync(context);
+        await context.SaveChangesAsync();
+
         await SeedMovementsAsync(context);
+        await context.SaveChangesAsync();
+
         await SeedTemplatesAsync(context);
         await context.SaveChangesAsync();
     }

@@ -27,7 +27,7 @@ builder.Services.AddSwaggerGen();
 // Add database
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ??
     builder.Configuration.GetConnectionString("DefaultConnection") ??
-    "Host=localhost;Database=pplcoach;Username=postgres;Password=postgres";
+    "Host=localhost;Database=ppl_dev;Username=ppl;Password=ppl_password";
 
 builder.Services.AddDbContext<PplCoachDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -71,14 +71,16 @@ if (app.Environment.IsDevelopment())
     // Create database and seed data in development
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<PplCoachDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
     try
     {
         await context.Database.EnsureCreatedAsync();
         await DatabaseSeeder.SeedAsync(context);
+        logger.LogInformation("Database created and seeded successfully");
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while creating/seeding the database.");
         // Continue anyway - the API can run without seed data
     }
