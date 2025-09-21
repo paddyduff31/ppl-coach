@@ -16,7 +16,11 @@ import {
   Target,
   Plus,
   ArrowsClockwise,
-  CircleDashed
+  CircleDashed,
+  CalendarBlank,
+  GoogleLogo,
+  Warning,
+  Info
 } from '@phosphor-icons/react'
 import { useUserSessions } from '../hooks/useSessions'
 import { cn } from '../utils/utils'
@@ -44,6 +48,24 @@ interface AppleHealthConfig {
   syncWorkouts: boolean
 }
 
+interface GoogleCalendarConfig {
+  enabled: boolean
+  calendarId: string
+  autoSchedule: boolean
+  reminderMinutes: number
+  syncCompletedWorkouts: boolean
+  workoutDuration: number
+}
+
+interface CalendarEvent {
+  id: string
+  title: string
+  start: Date
+  end: Date
+  description: string
+  type: 'push' | 'pull' | 'legs'
+}
+
 export default function Integrations() {
   const [healthData, setHealthData] = useState<HealthData>({})
   const [config, setConfig] = useState<AppleHealthConfig>({
@@ -58,15 +80,35 @@ export default function Integrations() {
     autoSync: false,
     syncWorkouts: true
   })
+  const [calendarConfig, setCalendarConfig] = useState<GoogleCalendarConfig>({
+    enabled: false,
+    calendarId: '',
+    autoSchedule: true,
+    reminderMinutes: 30,
+    syncCompletedWorkouts: true,
+    workoutDuration: 90
+  })
+  const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([])
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isConnectingCalendar, setIsConnectingCalendar] = useState(false)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
   const { data: sessions = [] } = useUserSessions()
 
   useEffect(() => {
-    // Load saved configuration
+    // Load saved configurations
     const savedConfig = localStorage.getItem('apple-health-config')
+    const savedCalendarConfig = localStorage.getItem('google-calendar-config')
+    
     if (savedConfig) {
       setConfig(JSON.parse(savedConfig))
+    }
+    
+    if (savedCalendarConfig) {
+      const calendarData = JSON.parse(savedCalendarConfig)
+      setCalendarConfig(calendarData)
+      if (calendarData.enabled) {
+        loadUpcomingEvents()
+      }
     }
 
     // Mock health data for demo
@@ -169,6 +211,82 @@ export default function Integrations() {
     const newConfig = { ...config, syncWorkouts: !config.syncWorkouts }
     setConfig(newConfig)
     localStorage.setItem('apple-health-config', JSON.stringify(newConfig))
+  }
+
+  const connectToGoogleCalendar = async () => {
+    setIsConnectingCalendar(true)
+    
+    try {
+      // In a real app, this would use Google Calendar API
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const newConfig = {
+        ...calendarConfig,
+        enabled: true,
+        calendarId: 'primary'
+      }
+      
+      setCalendarConfig(newConfig)
+      localStorage.setItem('google-calendar-config', JSON.stringify(newConfig))
+      
+      // Load upcoming events
+      loadUpcomingEvents()
+      
+    } catch (error) {
+      console.error('Failed to connect to Google Calendar:', error)
+    } finally {
+      setIsConnectingCalendar(false)
+    }
+  }
+
+  const disconnectFromGoogleCalendar = () => {
+    const newConfig = {
+      ...calendarConfig,
+      enabled: false,
+      calendarId: ''
+    }
+    
+    setCalendarConfig(newConfig)
+    localStorage.setItem('google-calendar-config', JSON.stringify(newConfig))
+    setUpcomingEvents([])
+  }
+
+  const loadUpcomingEvents = () => {
+    // Mock upcoming workout events
+    const mockEvents: CalendarEvent[] = [
+      {
+        id: '1',
+        title: 'Push Day Workout',
+        start: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        end: new Date(Date.now() + 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // +90 mins
+        description: 'Chest, Shoulders, Triceps',
+        type: 'push'
+      },
+      {
+        id: '2',
+        title: 'Pull Day Workout',
+        start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
+        end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
+        description: 'Back, Biceps, Rear Delts',
+        type: 'pull'
+      },
+      {
+        id: '3',
+        title: 'Legs Day Workout',
+        start: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // In 4 days
+        end: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
+        description: 'Quads, Hamstrings, Glutes, Calves',
+        type: 'legs'
+      }
+    ]
+    
+    setUpcomingEvents(mockEvents)
+  }
+
+  const toggleCalendarAutoSchedule = () => {
+    const newConfig = { ...calendarConfig, autoSchedule: !calendarConfig.autoSchedule }
+    setCalendarConfig(newConfig)
+    localStorage.setItem('google-calendar-config', JSON.stringify(newConfig))
   }
 
   return (
@@ -423,6 +541,142 @@ export default function Integrations() {
                 </div>
               </div>
             )}
+
+            {/* Google Calendar Integration */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-200/50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center">
+                    <GoogleLogo className="h-6 w-6 text-yellow-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-semibold text-gray-900">Google Calendar</h2>
+                    <p className="text-gray-600">Sync workouts as calendar events</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {calendarConfig.enabled ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-xl border border-green-200">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Connected</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 text-gray-500 rounded-xl border border-gray-200">
+                      <XCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Disconnected</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!calendarConfig.enabled ? (
+                <div className="text-center py-8">
+                  <GoogleLogo className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Connect to Google Calendar
+                  </h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    Sync your workout sessions to Google Calendar as events
+                  </p>
+                  <Button
+                    onClick={connectToGoogleCalendar}
+                    disabled={isConnectingCalendar}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl px-6 py-3 font-medium"
+                  >
+                    {isConnectingCalendar ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Connecting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <CircleDashed className="h-5 w-5" />
+                        Connect Google Calendar
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Upcoming Events */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-4">Upcoming Workout Events</h4>
+                    
+                    <div className="space-y-3">
+                      {upcomingEvents.length === 0 ? (
+                        <p className="text-gray-500 text-sm text-center py-4">
+                          No upcoming events. Schedule a workout!
+                        </p>
+                      ) : (
+                        upcomingEvents.map(event => (
+                          <div key={event.id} className="p-4 bg-gray-50 rounded-lg shadow-sm">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm text-gray-500">
+                                {event.start.toLocaleString('default', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                              <div className="text-xs rounded-full" style={{ backgroundColor: event.type === 'push' ? '#fef2f2' : event.type === 'pull' ? '#eef6ff' : '#f0fff4' }}>
+                                <span className="text-gray-800 font-medium">
+                                  {event.type.charAt(0).toUpperCase() + event.type.slice(1)} Day
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="text-lg font-semibold text-gray-900">{event.title}</div>
+                            <div className="text-sm text-gray-500">{event.description}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Calendar Settings */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <h4 className="font-semibold text-gray-900 mb-4">Calendar Settings</h4>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">Auto Schedule</div>
+                          <div className="text-sm text-gray-500">Automatically create events for workouts</div>
+                        </div>
+                        <button
+                          onClick={toggleCalendarAutoSchedule}
+                          className={cn(
+                            "w-11 h-6 rounded-full transition-colors relative",
+                            calendarConfig.autoSchedule ? "bg-blue-500" : "bg-gray-200"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-4 h-4 bg-white rounded-full transition-transform absolute top-1",
+                            calendarConfig.autoSchedule ? "translate-x-6" : "translate-x-1"
+                          )} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">Sync Completed Workouts</div>
+                          <div className="text-sm text-gray-500">Add completed workouts to calendar</div>
+                        </div>
+                        <button
+                          onClick={toggleWorkoutSync}
+                          className={cn(
+                            "w-11 h-6 rounded-full transition-colors relative",
+                            calendarConfig.syncCompletedWorkouts ? "bg-blue-500" : "bg-gray-200"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-4 h-4 bg-white rounded-full transition-transform absolute top-1",
+                            calendarConfig.syncCompletedWorkouts ? "translate-x-6" : "translate-x-1"
+                          )} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Stats */}
             <div className="bg-white rounded-3xl p-6 border border-gray-200/50">

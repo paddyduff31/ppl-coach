@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { http } from '../api/http'
+import { api } from '../api/endpoints'
 import { useAuth } from './useAuth'
 
 export interface SessionSetLog {
@@ -128,4 +129,20 @@ function getLastWorkoutDate(sessions: WorkoutSession[]): string | undefined {
   )
 
   return sortedSessions[0]?.date
+}
+
+export function useUpdateSession() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: ({ sessionId, data }: { 
+      sessionId: string; 
+      data: Partial<{ date: string; dayType: number; notes: string }> 
+    }) => api.updateSession(sessionId, data),
+    onSuccess: () => {
+      // Invalidate sessions queries to refetch updated data
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+    },
+  })
 }

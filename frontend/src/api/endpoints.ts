@@ -15,6 +15,8 @@ export const api = {
 
   // Sessions
   createSession: (data: CreateSession) => http.post<WorkoutSession>('/api/sessions', data),
+  updateSession: (id: string, data: Partial<{ date: string; dayType: number; notes: string }>) => 
+    http.put<WorkoutSession>(`/api/sessions/${id}`, data),
   getSession: (id: string) => http.get<WorkoutSession>(`/api/sessions/${id}`),
   getUserSessions: (userId: string, startDate?: string, endDate?: string) => {
     const params = new URLSearchParams()

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Badge } from '../components/ui/badge'
+import { SessionDateEditor } from '../components/SessionDateEditor'
 import {
   CaretLeft,
   CaretRight,
@@ -17,7 +18,8 @@ import {
   MagnifyingGlass,
   Barbell,
   Eye,
-  Play
+  Play,
+  PencilSimple
 } from '@phosphor-icons/react'
 import { useUserSessions } from '../hooks/useSessions'
 import { cn } from '../utils/utils'
@@ -279,16 +281,32 @@ export default function Calendar() {
                           <div
                             key={sessionIndex}
                             className={cn(
-                              "px-2 py-1 rounded-lg text-xs font-medium border",
+                              "px-2 py-1 rounded-lg text-xs font-medium border group relative",
                               DAY_TYPE_COLORS[dayType]
                             )}
                           >
-                            <div className="flex items-center gap-1">
-                              <CalendarCheck className="h-3 w-3" />
-                              {DAY_TYPE_NAMES[dayType]}
-                            </div>
-                            <div className="text-xs opacity-75 mt-1">
-                              {session.setLogs?.length || 0} sets
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <CalendarCheck className="h-3 w-3" />
+                                  {DAY_TYPE_NAMES[dayType]}
+                                </div>
+                                <div className="text-xs opacity-75 mt-1">
+                                  {session.setLogs?.length || 0} sets
+                                </div>
+                              </div>
+                              <SessionDateEditor
+                                sessionId={session.id}
+                                currentDate={session.date}
+                                sessionName={`${DAY_TYPE_NAMES[dayType]} Day`}
+                              >
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/50 rounded"
+                                >
+                                  <PencilSimple className="h-3 w-3" />
+                                </button>
+                              </SessionDateEditor>
                             </div>
                           </div>
                         )
@@ -406,6 +424,21 @@ export default function Calendar() {
                       </div>
                       
                       <div className="flex items-center gap-3">
+                        <SessionDateEditor
+                          sessionId={session.id}
+                          currentDate={session.date}
+                          sessionName={`${DAY_TYPE_NAMES[dayType]} Day`}
+                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <PencilSimple className="h-4 w-4 mr-2" />
+                            Edit Date
+                          </Button>
+                        </SessionDateEditor>
                         <Button
                           variant="outline"
                           size="sm"

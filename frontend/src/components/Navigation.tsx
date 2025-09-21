@@ -21,6 +21,10 @@ import {
   Crown
 } from '@phosphor-icons/react'
 import { cn } from '../utils/utils'
+import { useWorkoutPlan } from '../hooks/useWorkoutPlan'
+import { useAuth } from '../hooks/useAuth'
+import { useCreateSession } from '../hooks/useSession'
+import { useNavigate } from '@tanstack/react-router'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: House, shortcut: 'H' },
@@ -33,6 +37,51 @@ const navigation = [
 
 export function Navigation() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const createSessionMutation = useCreateSession()
+  const {
+    nextDayType,
+    nextDayName,
+    nextDayDescription,
+    isTodayComplete
+  } = useWorkoutPlan()
+
+  const startNextWorkout = async () => {
+    if (!user?.id) return
+
+    try {
+      // Create the session
+      const session = await createSessionMutation.mutateAsync({
+        userId: user.id,
+        date: new Date().toISOString().split('T')[0],
+        dayType: nextDayType,
+        notes: `${nextDayName} day workout`
+      })
+
+      // Navigate directly to the workout session
+      navigate({ to: '/log/$id', params: { id: session.data.id } })
+    } catch (error) {
+      console.error('Failed to start workout:', error)
+      // Fallback to workouts page if session creation fails
+      navigate({ to: '/plan' })
+    }
+  }
+
+  const handleStartWorkout = () => {
+    if (!user?.id) {
+      navigate({ to: '/onboarding' })
+      return
+    }
+
+    if (isTodayComplete) {
+      // If today's workout is complete, go to workouts page
+      navigate({ to: '/plan' })
+    } else {
+      // Start the specific workout for today
+      startNextWorkout()
+    }
+  }
 
   return (
     <>
@@ -208,15 +257,14 @@ export function Navigation() {
             </div>
           </Link>
 
-          {/* Start workout */}
-          <Link to="/plan">
-            <Button
-              className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 shadow-sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Start Workout
-            </Button>
-          </Link>
+          {/* Smart Start workout button */}
+          <Button
+            onClick={handleStartWorkout}
+            className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 shadow-sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {isTodayComplete ? 'Workout' : `Start ${nextDayName || 'Workout'}`}
+          </Button>
         </div>
       </div>
 

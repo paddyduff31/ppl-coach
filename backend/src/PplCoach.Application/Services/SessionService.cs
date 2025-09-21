@@ -5,19 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PplCoach.Application.Services;
 
-public interface ISessionService
-{
-    Task<List<SessionDto>> GetUserSessionsAsync(Guid userId);
-    Task<SessionDto?> GetSessionByIdAsync(Guid sessionId);
-    Task<Guid> CreateSessionAsync(CreateSessionRequest request);
-    Task UpdateSessionAsync(Guid sessionId, UpdateSessionRequest request);
-    Task DeleteSessionAsync(Guid sessionId);
-    Task<Guid> LogSetAsync(CreateSetLogRequest request);
-    Task DeleteSetAsync(Guid setId);
-    Task CompleteSessionAsync(Guid sessionId);
-    Task<List<MovementDto>> ShuffleMovementsAsync(ShuffleMovementsRequest request);
-}
-
 public class SessionService : ISessionService
 {
     private readonly IUnitOfWork _unitOfWork;
@@ -27,20 +14,28 @@ public class SessionService : ISessionService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<List<SessionDto>> GetUserSessionsAsync(Guid userId)
+    public async Task<List<WorkoutSessionDto>> GetUserSessionsAsync(Guid userId, DateOnly? startDate = null, DateOnly? endDate = null)
     {
-        var sessions = await _unitOfWork.WorkoutSessions
+        var query = _unitOfWork.WorkoutSessions
             .GetQueryable()
             .Include(s => s.SetLogs)
                 .ThenInclude(sl => sl.Movement)
-            .Where(s => s.UserId == userId)
+            .Where(s => s.UserId == userId);
+
+        if (startDate.HasValue)
+            query = query.Where(s => s.Date >= startDate.Value);
+        
+        if (endDate.HasValue)
+            query = query.Where(s => s.Date <= endDate.Value);
+
+        var sessions = await query
             .OrderByDescending(s => s.Date)
             .ToListAsync();
         
-        return sessions.Select(MapToDto).ToList();
+        return sessions.Select(MapToWorkoutSessionDto).ToList();
     }
 
-    public async Task<SessionDto?> GetSessionByIdAsync(Guid sessionId)
+    public async Task<WorkoutSessionDto?> GetSessionAsync(Guid sessionId)
     {
         var session = await _unitOfWork.WorkoutSessions
             .GetQueryable()
@@ -48,10 +43,10 @@ public class SessionService : ISessionService
                 .ThenInclude(sl => sl.Movement)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
         
-        return session != null ? MapToDto(session) : null;
+        return session != null ? MapToWorkoutSessionDto(session) : null;
     }
 
-    public async Task<Guid> CreateSessionAsync(CreateSessionRequest request)
+    public async Task<WorkoutSessionDto> CreateSessionAsync(CreateSessionDto request)
     {
         var session = new WorkoutSession
         {
@@ -66,22 +61,23 @@ public class SessionService : ISessionService
 
         await _unitOfWork.WorkoutSessions.AddAsync(session);
         await _unitOfWork.SaveChangesAsync();
-        return session.Id;
+        
+        return MapToWorkoutSessionDto(session);
     }
 
-    public async Task UpdateSessionAsync(Guid sessionId, UpdateSessionRequest request)
+    public async Task<WorkoutSessionDto> UpdateSessionAsync(Guid sessionId, UpdateSessionRequest request)
     {
         var session = await _unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
         if (session == null) throw new InvalidOperationException("Session not found");
 
+        if (request.Date.HasValue) session.Date = request.Date.Value;
+        if (request.DayType.HasValue) session.DayType = request.DayType.Value;
         if (request.Notes != null) session.Notes = request.Notes;
-        if (request.StartTime.HasValue) session.StartTime = request.StartTime;
-        if (request.EndTime.HasValue) session.EndTime = request.EndTime;
-        if (request.Duration.HasValue) session.Duration = request.Duration;
-        if (request.IsCompleted.HasValue) session.IsCompleted = request.IsCompleted.Value;
 
         _unitOfWork.WorkoutSessions.Update(session);
         await _unitOfWork.SaveChangesAsync();
+        
+        return MapToWorkoutSessionDto(session);
     }
 
     public async Task DeleteSessionAsync(Guid sessionId)
@@ -94,7 +90,7 @@ public class SessionService : ISessionService
         }
     }
 
-    public async Task<Guid> LogSetAsync(CreateSetLogRequest request)
+    public async Task<SetLogDto> LogSetAsync(CreateSetLogDto request)
     {
         var setLog = new SetLog
         {
@@ -104,15 +100,31 @@ public class SessionService : ISessionService
             SetIndex = request.SetIndex,
             WeightKg = request.WeightKg,
             Reps = request.Reps,
-            RPE = request.Rpe,
+            RPE = request.RPE,
             Tempo = request.Tempo,
-            Notes = request.Notes,
-            CreatedAt = DateTime.UtcNow
+            Notes = request.Notes
         };
 
         await _unitOfWork.SetLogs.AddAsync(setLog);
         await _unitOfWork.SaveChangesAsync();
-        return setLog.Id;
+        
+        // Get the movement name for the DTO
+        var movement = await _unitOfWork.Movements.GetByIdAsync(request.MovementId);
+        var createdAt = DateTime.UtcNow;
+        
+        return new SetLogDto(
+            setLog.Id,
+            setLog.SessionId,
+            setLog.MovementId,
+            setLog.SetIndex,
+            setLog.WeightKg,
+            setLog.Reps,
+            setLog.RPE,
+            setLog.Tempo,
+            setLog.Notes,
+            createdAt,
+            movement?.Name
+        );
     }
 
     public async Task DeleteSetAsync(Guid setId)
@@ -125,63 +137,16 @@ public class SessionService : ISessionService
         }
     }
 
-    public async Task CompleteSessionAsync(Guid sessionId)
+    private WorkoutSessionDto MapToWorkoutSessionDto(WorkoutSession session)
     {
-        var session = await _unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
-        if (session == null) throw new InvalidOperationException("Session not found");
-
-        session.IsCompleted = true;
-        session.EndTime = DateTime.UtcNow;
-        
-        if (session.StartTime.HasValue && session.EndTime.HasValue)
+        return new WorkoutSessionDto
         {
-            session.Duration = (int)(session.EndTime.Value - session.StartTime.Value).TotalMinutes;
-        }
-
-        _unitOfWork.WorkoutSessions.Update(session);
-        await _unitOfWork.SaveChangesAsync();
-    }
-
-    public async Task<List<MovementDto>> ShuffleMovementsAsync(ShuffleMovementsRequest request)
-    {
-        var availableMovements = await _unitOfWork.Movements
-            .GetQueryable()
-            .Where(m => request.AvailableEquipment == null || 
-                       request.AvailableEquipment.Any(eq => ((int)m.EquipmentType & eq) != 0))
-            .ToListAsync();
-
-        // Shuffle and take requested count
-        var random = new Random();
-        var shuffled = availableMovements
-            .OrderBy(x => random.Next())
-            .Take(request.Count ?? 6)
-            .ToList();
-
-        return shuffled.Select(m => new MovementDto(
-            m.Id,
-            m.Name,
-            m.MuscleGroups?.ToList() ?? new List<string>(),
-            m.IsCompound,
-            m.Instructions,
-            m.ImageUrl
-        )).ToList();
-    }
-
-    private SessionDto MapToDto(WorkoutSession session)
-    {
-        return new SessionDto(
-            session.Id,
-            session.UserId,
-            session.Date,
-            session.DayType,
-            session.Notes,
-            session.StartTime,
-            session.EndTime,
-            session.Duration,
-            session.IsCompleted,
-            session.TotalVolume,
-            session.AverageRpe,
-            session.SetLogs.Select(s => new SetLogDto(
+            Id = session.Id,
+            UserId = session.UserId,
+            Date = session.Date,
+            DayType = session.DayType,
+            Notes = session.Notes,
+            SetLogs = session.SetLogs.Select(s => new SetLogDto(
                 s.Id,
                 s.SessionId,
                 s.MovementId,
@@ -191,9 +156,9 @@ public class SessionService : ISessionService
                 s.RPE,
                 s.Tempo,
                 s.Notes,
-                s.CreatedAt,
+                DateTime.UtcNow, // Use current time since CreatedAt doesn't exist on the entity
                 s.Movement?.Name
             )).ToList()
-        );
+        };
     }
 }

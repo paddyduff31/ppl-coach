@@ -22,7 +22,7 @@ public class WorkoutSession
     
     // Calculated properties
     public decimal TotalVolume => SetLogs.Sum(s => s.WeightKg * s.Reps);
-    public double? AverageRpe => SetLogs.Where(s => s.Rpe.HasValue).Any() 
-        ? SetLogs.Where(s => s.Rpe.HasValue).Average(s => s.Rpe!.Value) 
+    public decimal? AverageRpe => SetLogs.Where(s => s.RPE.HasValue).Any() 
+        ? SetLogs.Where(s => s.RPE.HasValue).Average(s => s.RPE!.Value) 
         : null;
 }
