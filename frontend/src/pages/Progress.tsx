@@ -25,17 +25,19 @@ import {
   Trophy,
   Clock,
   Play,
-  Lightning
+  Lightning,
+  User
 } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
 import { usePersonalRecords, useProgressSummary } from '../hooks/useProgress'
 import { useUserSessions, useSessionStats } from '../hooks/useSessions'
 import { LoadingState, SkeletonCard } from '../components/ui/loading'
+import { BodyProgressMap } from '../components/features/BodyProgressMap'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
 export default function Progress() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'strength' | 'volume'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'bodymap' | 'strength' | 'volume'>('overview')
 
   const { data: personalRecords, isLoading: prLoading } = usePersonalRecords()
   const { data: progressSummary, isLoading: summaryLoading } = useProgressSummary()
@@ -191,16 +193,18 @@ export default function Progress() {
           <div className="flex justify-center">
             <div className="flex gap-2">
               {[
-                { key: 'overview', label: 'Overview' },
-                { key: 'strength', label: 'Strength' },
-                { key: 'volume', label: 'Volume' }
+                { key: 'overview', label: 'Overview', icon: ChartLine },
+                { key: 'bodymap', label: 'Body Map', icon: User },
+                { key: 'strength', label: 'Strength', icon: Trophy },
+                { key: 'volume', label: 'Volume', icon: Barbell }
               ].map((tab) => (
                 <Button
                   key={tab.key}
                   variant={activeTab === tab.key ? 'default' : 'outline'}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className="rounded-xl px-6"
+                  className="rounded-xl px-6 flex items-center gap-2"
                 >
+                  <tab.icon className="h-4 w-4" />
                   {tab.label}
                 </Button>
               ))}
@@ -242,6 +246,13 @@ export default function Progress() {
             </div>
           </div>
 
+          {/* Body Map Section */}
+          {activeTab === 'bodymap' && (
+            <div className="space-y-8">
+              <BodyProgressMap />
+            </div>
+          )}
+
           {/* Charts Section */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -275,38 +286,6 @@ export default function Progress() {
               </div>
             </div>
           )}
-
-          {/* Personal Records */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200/50">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Personal Records</h3>
-            {personalRecords && personalRecords.length > 0 ? (
-              <div className="space-y-4">
-                {personalRecords.slice(0, 5).map((pr: any, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                        <Trophy className="h-5 w-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">{pr.movementName}</div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(pr.date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900">{pr.weightKg}kg × {pr.reps}</div>
-                      <div className="text-sm text-gray-500">New PR</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No personal records yet. Keep training to set your first PR!
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
