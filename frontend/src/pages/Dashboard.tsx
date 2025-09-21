@@ -16,6 +16,7 @@ import { useWorkoutPlan } from '../hooks/useWorkoutPlan'
 import { useCreateSession } from '../hooks/useSession'
 import { useUserSessions, useSessionStats } from '../hooks/useSessions'
 import { useShuffleMovements } from '../hooks/useMovements'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { cn } from '../utils/utils'
 
 const DAY_TYPE_NAMES = {
@@ -54,24 +55,45 @@ export default function Dashboard() {
   const { data: allSessions = [] } = useUserSessions()
   const sessionStats = useSessionStats(allSessions)
 
-  const startNextWorkout = async () => {
-    if (!user?.id) return
 
-    try {
-      // Create the session
-      const session = await createSessionMutation.mutateAsync({
-        userId: user.id,
-        date: new Date().toISOString().split('T')[0],
-        dayType: nextDayType,
-        notes: `${nextDayName} day workout`
-      })
+    const startNextWorkout = async () => {
+        if (!user?.id) return
 
-      // Navigate to session - exercises will be auto-loaded there
-      navigate({ to: '/log/$id', params: { id: session.data.id } })
-    } catch (error) {
-      console.error('Failed to start workout:', error)
+        try {
+            // Create the session
+            const session = await createSessionMutation.mutateAsync({
+                userId: user.id,
+                date: new Date().toISOString().split('T')[0],
+                dayType: nextDayType,
+                notes: `${nextDayName} day workout`
+            })
+
+            // Navigate to session - exercises will be auto-loaded there
+            navigate({ to: '/log/$id', params: { id: session.data.id } })
+        } catch (error) {
+            console.error('Failed to start workout:', error)
+        }
     }
-  }
+
+  // Dashboard-specific keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'Enter',
+      action: () => {
+        if (!isTodayComplete) {
+          startNextWorkout()
+        }
+      },
+      description: 'Start workout (when available)'
+    },
+    {
+      key: 's',
+      metaKey: true,
+      action: startNextWorkout,
+      description: 'Start workout'
+    }
+  ])
+
 
   return (
     <div className="min-h-screen bg-white">

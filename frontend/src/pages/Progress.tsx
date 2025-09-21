@@ -148,98 +148,204 @@ export default function Progress() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <div className="max-w-6xl mx-auto pt-12 pb-8 px-6">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-4xl font-bold tracking-tight mb-3">Progress Dashboard</h1>
-          <p className="text-lg text-muted-foreground">
-            Track your PPL journey and celebrate your gains
-          </p>
-        </div>
-
-        {/* Key Metrics - Real data! */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
-            <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
-            <div className="text-2xl font-bold mb-1">{sessionStats.thisWeekSessions}</div>
-            <div className="text-sm text-muted-foreground">This Week</div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Hero Header */}
+        <div className="text-center space-y-6 mb-12 animate-fade-in">
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+              <ChartLine className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-600">Your Journey</span>
           </div>
 
-          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
-            <Barbell className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
-            <div className="text-2xl font-bold mb-1">{Math.round(sessionStats.totalVolume).toLocaleString()}</div>
-            <div className="text-sm text-muted-foreground">Total Volume (kg)</div>
-          </div>
-
-          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
-            <Pulse className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
-            <div className="text-2xl font-bold mb-1">{sessionStats.averageRpe || 'N/A'}</div>
-            <div className="text-sm text-muted-foreground">Average RPE</div>
-          </div>
-
-          <div className="glass rounded-xl p-6 text-center group hover:shadow-md transition-all duration-200">
-            <Lightning className="h-8 w-8 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
-            <div className="text-2xl font-bold mb-1">{sessionStats.workoutStreak}</div>
-            <div className="text-sm text-muted-foreground">Day Streak</div>
+          <div className="space-y-3">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Progress Dashboard
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              Track your PPL journey and celebrate every gain.
+              Your consistency is building strength.
+            </p>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-8 bg-muted/50 p-1 rounded-lg">
-          {[
-            { key: 'overview', label: 'Overview', icon: ChartLine },
-            { key: 'strength', label: 'Strength', icon: Trophy },
-            { key: 'volume', label: 'Volume', icon: Barbell },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
-                activeTab === tab.key
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-            </button>
-          ))}
+        {/* Enhanced Key Metrics */}
+        <div className="grid md:grid-cols-4 gap-6 mb-12">
+          <div className="group relative bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50" />
+            <div className="relative p-8 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{sessionStats.thisWeekSessions}</div>
+              <div className="text-sm font-medium text-gray-600">This Week</div>
+              <div className="text-xs text-gray-500 mt-1">Workouts completed</div>
+            </div>
+          </div>
+
+          <div className="group relative bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-50" />
+            <div className="relative p-8 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Barbell className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{Math.round(sessionStats.totalVolume).toLocaleString()}</div>
+              <div className="text-sm font-medium text-gray-600">Total Volume</div>
+              <div className="text-xs text-gray-500 mt-1">Kilograms lifted</div>
+            </div>
+          </div>
+
+          <div className="group relative bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 opacity-50" />
+            <div className="relative p-8 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Pulse className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{sessionStats.averageRpe || 'N/A'}</div>
+              <div className="text-sm font-medium text-gray-600">Average RPE</div>
+              <div className="text-xs text-gray-500 mt-1">Effort intensity</div>
+            </div>
+          </div>
+
+          <div className="group relative bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 opacity-50" />
+            <div className="relative p-8 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Lightning className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{sessionStats.workoutStreak}</div>
+              <div className="text-sm font-medium text-gray-600">Day Streak</div>
+              <div className="text-xs text-gray-500 mt-1">Consistency</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Tab Navigation */}
+        <div className="flex items-center justify-center mb-12">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-2 inline-flex">
+            {[
+              { key: 'overview', label: 'Overview', icon: ChartLine, gradient: 'from-blue-500 to-cyan-500' },
+              { key: 'strength', label: 'Strength', icon: Trophy, gradient: 'from-yellow-500 to-orange-500' },
+              { key: 'volume', label: 'Volume', icon: Barbell, gradient: 'from-purple-500 to-indigo-500' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`relative flex items-center space-x-3 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                  activeTab === tab.key
+                    ? 'text-white bg-gradient-to-r shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                } ${activeTab === tab.key ? tab.gradient : ''}`}
+              >
+                <tab.icon className={`h-4 w-4 ${activeTab === tab.key ? 'text-white' : ''}`} />
+                <span>{tab.label}</span>
+                {activeTab === tab.key && (
+                  <div className="absolute inset-0 bg-gradient-to-r opacity-20 rounded-xl" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {chartData.length > 0 ? (
-              <div className="grid lg:grid-cols-2 gap-6">
-                <div className="glass rounded-2xl p-6">
-                  <h3 className="text-xl font-semibold mb-4">Weekly Sessions</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis dataKey="weekLabel" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="sessions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <div className="grid lg:grid-cols-2 gap-8">
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-xl p-8 group hover:shadow-2xl transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Weekly Sessions</h3>
+                      <p className="text-sm text-gray-500">Your training consistency</p>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="weekLabel"
+                        axisLine={false}
+                        tickLine={false}
+                        className="text-gray-600 text-xs"
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        className="text-gray-600 text-xs"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Bar
+                        dataKey="sessions"
+                        radius={[8, 8, 0, 0]}
+                        fill="url(#blueGradient)"
+                      />
+                      <defs>
+                        <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" />
+                          <stop offset="100%" stopColor="#06b6d4" />
+                        </linearGradient>
+                      </defs>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div className="glass rounded-2xl p-6">
-                  <h3 className="text-xl font-semibold mb-4">Volume Progression</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis dataKey="weekLabel" />
-                      <YAxis />
-                      <Tooltip />
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-xl p-8 group hover:shadow-2xl transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+                      <TrendUp className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Volume Progression</h3>
+                      <p className="text-sm text-gray-500">Your strength gains over time</p>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="weekLabel"
+                        axisLine={false}
+                        tickLine={false}
+                        className="text-gray-600 text-xs"
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        className="text-gray-600 text-xs"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
                       <Line
                         type="monotone"
                         dataKey="volume"
-                        stroke="#10b981"
-                        strokeWidth={3}
-                        dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                        stroke="url(#greenGradient)"
+                        strokeWidth={4}
+                        dot={{ fill: '#10b981', strokeWidth: 3, r: 6, stroke: 'white' }}
+                        activeDot={{ r: 8, stroke: '#10b981', strokeWidth: 3, fill: 'white' }}
                       />
+                      <defs>
+                        <linearGradient id="greenGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset="100%" stopColor="#059669" />
+                        </linearGradient>
+                      </defs>
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -256,21 +362,60 @@ export default function Progress() {
 
         {/* Strength Tab */}
         {activeTab === 'strength' && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {personalRecords && personalRecords.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {personalRecords.map((pr) => (
-                  <div key={pr.id} className="glass rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <Trophy className="h-6 w-6 text-yellow-500" />
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(pr.achievedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <h3 className="font-semibold mb-2">{pr.movementName}</h3>
-                    <div className="text-2xl font-bold mb-1">{pr.weightKg}kg × {pr.reps}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Est. 1RM: {Math.round(pr.estimatedOneRepMax)}kg
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {personalRecords.map((pr, index) => (
+                  <div
+                    key={pr.id}
+                    className="group relative bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {/* Gradient Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 opacity-60" />
+
+                    <div className="relative p-8">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <Trophy className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+                            Personal Record
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {new Date(pr.achievedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-gray-900 mb-4 leading-tight">
+                        {pr.movementName}
+                      </h3>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600">Best Set</span>
+                          <span className="text-2xl font-bold text-gray-900">
+                            {pr.weightKg}kg × {pr.reps}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600">Est. 1RM</span>
+                          <span className="text-lg font-bold text-gray-900">
+                            {Math.round(pr.estimatedOneRepMax)}kg
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress indicator */}
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          <span>Keep pushing your limits!</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

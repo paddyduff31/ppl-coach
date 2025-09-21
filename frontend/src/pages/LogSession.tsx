@@ -22,8 +22,12 @@ import {
 import { useSession, useLogSet, useDeleteSet } from '../hooks/useSession'
 import { useMovements, useShuffleMovements } from '../hooks/useMovements'
 import { useUser } from '../hooks/useUser'
+import { useUserSessions } from '../hooks/useSessions'
 import { Timer, SessionTimer } from '../components/common/Timer'
+import { SmartSetInput } from '../components/SmartSetInput'
 import { LoadingState } from '../components/ui/loading'
+import { SuccessFeedback, useSuccessFeedback } from '../components/SuccessFeedback'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import type { CreateSetLog, Movement } from '../api/schemas'
 import { cn } from '../utils/utils'
 
@@ -65,6 +69,8 @@ export default function LogSession() {
   const shuffleMovementsMutation = useShuffleMovements()
   const logSetMutation = useLogSet()
   const deleteSetMutation = useDeleteSet()
+  const { data: allSessions = [] } = useUserSessions()
+  const { feedback, showSuccess, hideSuccess } = useSuccessFeedback()
 
   // All useState hooks must be called consistently
   const [sessionActive, setSessionActive] = useState(true)
@@ -74,6 +80,35 @@ export default function LogSession() {
   const [recommendedMovements, setRecommendedMovements] = useState<Movement[]>([])
   const [hasLoadedRecommendations, setHasLoadedRecommendations] = useState(false)
   const [focusedExercise, setFocusedExercise] = useState<string | null>(null)
+
+  // Keyboard shortcuts for this page
+  useKeyboardShortcuts([
+    {
+      key: 'a',
+      metaKey: true,
+      action: () => setShowExerciseSearch(true),
+      description: 'Add exercise'
+    },
+    {
+      key: 'f',
+      metaKey: true,
+      action: () => {
+        const firstMovement = movementsInSession[0]
+        if (firstMovement) {
+          setFocusedExercise(focusedExercise === firstMovement.id ? null : firstMovement.id)
+        }
+      },
+      description: 'Focus first exercise'
+    },
+    {
+      key: 'Escape',
+      action: () => {
+        setShowExerciseSearch(false)
+        setFocusedExercise(null)
+      },
+      description: 'Close modals/unfocus'
+    }
+  ])
 
   // All useMemo hooks must be called consistently
   const setsByMovement = useMemo(() => {
@@ -116,6 +151,23 @@ export default function LogSession() {
     return setsWithRpe.reduce((sum: number, set: any) => sum + set.rpe, 0) / setsWithRpe.length
   }, [session])
 
+  // Build workout history for smart progression
+  const workoutHistory = useMemo(() => {
+    const history: Record<string, any[]> = {}
+    allSessions.forEach(session => {
+      session.setLogs?.forEach((set: any) => {
+        if (!history[set.movementId]) {
+          history[set.movementId] = []
+        }
+        history[set.movementId].push({
+          ...set,
+          date: session.date
+        })
+      })
+    })
+    return history
+  }, [allSessions])
+
   // Load recommended movements when session is empty
   useEffect(() => {
     if (!user?.id || !session?.data || hasLoadedRecommendations) return
@@ -153,7 +205,7 @@ export default function LogSession() {
     }
 
     loadRecommendations()
-  }, [user?.id, session?.data, hasLoadedRecommendations]) // Removed shuffleMovementsMutation from deps
+  }, [user?.id, session?.data, hasLoadedRecommendations])
 
   // Early returns for loading and error states
   if (sessionLoading) {
@@ -212,21 +264,58 @@ export default function LogSession() {
     try {
       await logSetMutation.mutateAsync(setData)
 
-      // Clear input for this movement
+      // Check for PR (Personal Record)
+      const isPersonalRecord = checkForPersonalRecord(movementId, setData.weightKg, setData.reps)
+
+      if (isPersonalRecord) {
+        showSuccess('pr_achieved', 'New Personal Record!',
+          `${setData.weightKg}kg × ${setData.reps} reps`)
+      } else {
+        showSuccess('set_logged', undefined,
+          `${setData.weightKg}kg × ${setData.reps} reps`)
+      }
+
+      // Clear input for this movement but keep weight for next set
       setSetInputs(prev => ({
         ...prev,
         [movementId]: {
           movementId,
-          weightKg: '',
-          reps: '',
+          weightKg: input.weightKg, // Keep weight for next set
+          reps: '', // Clear reps for next set
           rpe: '',
-          tempo: '',
+          tempo: input.tempo, // Keep tempo
           notes: ''
         }
       }))
     } catch (error) {
       console.error('Failed to log set:', error)
     }
+  }
+
+  const checkForPersonalRecord = (movementId: string, weightKg: number, reps: number) => {
+    // Get all historical sets for this movement (excluding current session)
+    const historicalSets = allSessions
+      .filter(s => s.id !== id) // Exclude current session
+      .flatMap(session => session.setLogs || [])
+      .filter(set => set.movementId === movementId)
+
+    // Also get sets from current session that were already logged
+    const currentSessionSets = (session?.data?.setLogs || [])
+      .filter(set => set.movementId === movementId)
+
+    const allPreviousSets = [...historicalSets, ...currentSessionSets]
+
+    // If this is truly the first time doing this exercise ever, it's a PR
+    if (allPreviousSets.length === 0) return true
+
+    // Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
+    const currentE1RM = weightKg * (1 + reps / 30)
+    const previousBestE1RM = Math.max(
+      ...allPreviousSets.map(set => set.weightKg * (1 + set.reps / 30))
+    )
+
+    // Only consider it a PR if it's significantly better (more than 0.1kg equivalent)
+    return currentE1RM > previousBestE1RM + 0.1
   }
 
   const deleteSet = async (setId: string) => {
@@ -283,30 +372,6 @@ export default function LogSession() {
     }
   }
 
-  if (sessionLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-        <div className="max-w-6xl mx-auto pt-12 pb-8 px-6">
-          <LoadingState message="Loading your workout session..." />
-        </div>
-      </div>
-    )
-  }
-
-  if (sessionError || !session?.data) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-        <div className="max-w-4xl mx-auto pt-12 pb-8 px-6 text-center">
-          <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
-          <p className="text-muted-foreground mb-6">This workout session could not be loaded.</p>
-          <Button onClick={() => navigate({ to: '/' })}>
-            Return to Dashboard
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   const filteredMovements = movements.filter((movement: Movement) =>
     movement.name.toLowerCase().includes(exerciseSearchQuery.toLowerCase()) ||
     movement.muscleGroups?.some(mg => mg.toLowerCase().includes(exerciseSearchQuery.toLowerCase()))
@@ -315,399 +380,338 @@ export default function LogSession() {
   const dayType = session.data.dayType as keyof typeof DAY_TYPE_NAMES
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="pt-8 pb-8 px-8 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className={cn(
-                  "w-3 h-3 rounded-full",
-                  `bg-gradient-to-r ${DAY_TYPE_COLORS[dayType].replace('/20', '')}`
-                )} />
-                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  {DAY_TYPE_NAMES[dayType]} Day Session
-                </span>
+    <>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="pt-8 pb-8 px-8 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={cn(
+                    "w-3 h-3 rounded-full",
+                    `bg-gradient-to-r ${DAY_TYPE_COLORS[dayType].replace('/20', '')}`
+                  )} />
+                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    {DAY_TYPE_NAMES[dayType]} Day Session
+                  </span>
+                </div>
+                <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2">
+                  Active Workout
+                </h1>
+                <p className="text-lg text-gray-600">
+                  {new Date(session.data.date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2">
-                Active Workout
-              </h1>
-              <p className="text-lg text-gray-600">
-                {new Date(session.data.date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <SessionTimer isActive={sessionActive} onToggle={() => setSessionActive(!sessionActive)} />
-              <Button
-                onClick={reshuffleExercises}
-                disabled={shuffleMovementsMutation.isPending}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-              >
-                <Shuffle className="h-4 w-4 mr-2" />
-                {shuffleMovementsMutation.isPending ? 'Shuffling...' : 'Reshuffle'}
-              </Button>
-              <Button
-                onClick={() => navigate({ to: '/' })}
-                className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Complete Session
-              </Button>
-            </div>
-          </div>
-
-          {/* Stats Bar */}
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Target className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">{movementsInSession.length}</div>
-              <div className="text-sm text-gray-500">Exercises</div>
-            </div>
-            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Barbell className="h-5 w-5 text-orange-600" />
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">{session.data.setLogs.length}</div>
-              <div className="text-sm text-gray-500">Sets Logged</div>
-            </div>
-            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <TrendUp className="h-5 w-5 text-green-600" />
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">{Math.round(totalVolume).toLocaleString()}</div>
-              <div className="text-sm text-gray-500">Volume (kg)</div>
-            </div>
-            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
-              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Pulse className="h-5 w-5 text-purple-600" />
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</div>
-              <div className="text-sm text-gray-500">Avg RPE</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-8 py-8">
-          <div className="grid lg:grid-cols-4 gap-8">
-            {/* Main workout area */}
-            <div className="lg:col-span-3 space-y-6">
-
-            {/* Add Exercise Section */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-200/50">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">Exercises</h2>
+              <div className="flex items-center gap-3">
+                <SessionTimer isActive={sessionActive} onToggle={() => setSessionActive(!sessionActive)} />
                 <Button
-                  onClick={() => setShowExerciseSearch(!showExerciseSearch)}
+                  onClick={reshuffleExercises}
+                  disabled={shuffleMovementsMutation.isPending}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Exercise
+                  <Shuffle className="h-4 w-4 mr-2" />
+                  {shuffleMovementsMutation.isPending ? 'Shuffling...' : 'Reshuffle'}
+                </Button>
+                <Button
+                  onClick={() => navigate({ to: '/' })}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Complete Session
                 </Button>
               </div>
-
-              {/* Exercise Search */}
-              {showExerciseSearch && (
-                <div className="mb-6 p-6 border border-gray-200 rounded-2xl bg-gray-50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="relative flex-1">
-                      <MagnifyingGlass className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                      <Input
-                        placeholder="Search exercises..."
-                        value={exerciseSearchQuery}
-                        onChange={(e) => setExerciseSearchQuery(e.target.value)}
-                        className="pl-10 bg-white border-gray-200 rounded-xl h-12 text-base"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => setShowExerciseSearch(false)}
-                      className="bg-white hover:bg-gray-100 text-gray-600 rounded-xl px-3 py-3"
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {filteredMovements.slice(0, 10).map((movement) => (
-                      <div
-                        key={movement.id}
-                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer transition-all duration-200"
-                        onClick={() => addExerciseToSession(movement)}
-                      >
-                        <div>
-                          <div className="font-semibold text-gray-900">{movement.name}</div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            {movement.muscleGroups?.join(', ')}
-                          </div>
-                        </div>
-                        <Plus className="h-5 w-5 text-gray-400" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Exercises */}
-            {movementsInSession.map((movement) => {
-              const sets = setsByMovement[movement.id] || []
-              const input = setInputs[movement.id] || {
-                movementId: movement.id,
-                weightKg: '',
-                reps: '',
-                rpe: '',
-                tempo: '',
-                notes: ''
-              }
-              const isFocused = focusedExercise === movement.id
+            {/* Stats Bar */}
+            <div className="grid md:grid-cols-4 gap-6">
+              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Target className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="text-2xl font-semibold text-gray-900 mb-1">{movementsInSession.length}</div>
+                <div className="text-sm text-gray-500">Exercises</div>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Barbell className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="text-2xl font-semibold text-gray-900 mb-1">{session.data.setLogs.length}</div>
+                <div className="text-sm text-gray-500">Sets Logged</div>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <TrendUp className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="text-2xl font-semibold text-gray-900 mb-1">{Math.round(totalVolume).toLocaleString()}</div>
+                <div className="text-sm text-gray-500">Volume (kg)</div>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Pulse className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="text-2xl font-semibold text-gray-900 mb-1">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</div>
+                <div className="text-sm text-gray-500">Avg RPE</div>
+              </div>
+            </div>
+          </div>
 
-              return (
-                <div
-                  key={movement.id}
-                  className={cn(
-                    "bg-white rounded-3xl p-8 border transition-all duration-300",
-                    isFocused
-                      ? "border-blue-300 shadow-lg shadow-blue-100/50 scale-[1.01]"
-                      : "border-gray-200/50 hover:border-gray-300/50"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h3 className="text-2xl font-semibold text-gray-900 mb-2">{movement.name}</h3>
-                      <div className="flex items-center gap-4">
-                        <span className="text-gray-600">{movement.muscleGroups?.join(', ')}</span>
-                        {movement.isCompound && (
-                          <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium">
-                            Compound
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        onClick={() => setFocusedExercise(isFocused ? null : movement.id)}
-                        className={cn(
-                          "rounded-xl px-4 py-2 font-medium transition-all duration-200",
-                          isFocused
-                            ? "bg-blue-100 hover:bg-blue-200 text-blue-700"
-                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                        )}
-                      >
-                        <Target className="h-4 w-4 mr-2" />
-                        {isFocused ? 'Unfocus' : 'Focus'}
-                      </Button>
-                    </div>
+          <div className="px-8 py-8">
+            <div className="grid lg:grid-cols-4 gap-8">
+              {/* Main workout area */}
+              <div className="lg:col-span-3 space-y-6">
+
+                {/* Add Exercise Section */}
+                <div className="bg-white rounded-3xl p-8 border border-gray-200/50">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-semibold text-gray-900">Exercises</h2>
+                    <Button
+                      onClick={() => setShowExerciseSearch(!showExerciseSearch)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Exercise
+                    </Button>
                   </div>
 
-                  {/* Previous sets */}
-                  {sets.length > 0 && (
-                    <div className="mb-8">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Sets Completed</h4>
-                      <div className="space-y-3">
-                        {sets.map((set: any, index) => (
+                  {/* Exercise Search */}
+                  {showExerciseSearch && (
+                    <div className="mb-6 p-6 border border-gray-200 rounded-2xl bg-gray-50">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="relative flex-1">
+                          <MagnifyingGlass className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                          <Input
+                            placeholder="Search exercises..."
+                            value={exerciseSearchQuery}
+                            onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                            className="pl-10 bg-white border-gray-200 rounded-xl h-12 text-base"
+                          />
+                        </div>
+                        <Button
+                          onClick={() => setShowExerciseSearch(false)}
+                          className="bg-white hover:bg-gray-100 text-gray-600 rounded-xl px-3 py-3"
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {filteredMovements.slice(0, 10).map((movement) => (
                           <div
-                            key={set.id}
-                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200/50"
+                            key={movement.id}
+                            className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer transition-all duration-200"
+                            onClick={() => addExerciseToSession(movement)}
                           >
-                            <div className="flex items-center gap-6">
-                              <span className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-sm font-semibold text-gray-700">
-                                {index + 1}
-                              </span>
-                              <div className="flex items-center gap-6 text-base">
-                                <span className="font-semibold text-gray-900">{set.weightKg}kg × {set.reps}</span>
-                                {set.rpe && <span className="text-gray-600">RPE {set.rpe}</span>}
-                                {set.tempo && <span className="text-gray-600">{set.tempo}</span>}
-                                {set.notes && <span className="text-gray-600 italic">"{set.notes}"</span>}
+                            <div>
+                              <div className="font-semibold text-gray-900">{movement.name}</div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                {movement.muscleGroups?.join(', ')}
                               </div>
                             </div>
-                            <Button
-                              onClick={() => deleteSet(set.id)}
-                              disabled={deleteSetMutation.isPending}
-                              className="bg-red-50 hover:bg-red-100 text-red-600 rounded-xl px-3 py-2"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
+                            <Plus className="h-5 w-5 text-gray-400" />
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+                </div>
 
-                  {/* Add new set */}
-                  <div className="p-6 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/30">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Plus className="h-4 w-4 text-blue-600" />
-                      </div>
-                      Log Set #{sets.length + 1}
-                    </h4>
+                {/* Exercises */}
+                {movementsInSession.map((movement) => {
+                  const sets = setsByMovement[movement.id] || []
+                  const input = setInputs[movement.id] || {
+                    movementId: movement.id,
+                    weightKg: '',
+                    reps: '',
+                    rpe: '',
+                    tempo: '',
+                    notes: ''
+                  }
+                  const isFocused = focusedExercise === movement.id
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Weight (kg)</Label>
-                        <Input
-                          type="number"
-                          placeholder="80"
-                          value={input.weightKg}
-                          onChange={(e) => updateSetInput(movement.id, 'weightKg', e.target.value)}
-                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Reps</Label>
-                        <Input
-                          type="number"
-                          placeholder="8"
-                          value={input.reps}
-                          onChange={(e) => updateSetInput(movement.id, 'reps', e.target.value)}
-                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">RPE (1-10)</Label>
-                        <Input
-                          type="number"
-                          placeholder="8"
-                          min="1"
-                          max="10"
-                          step="0.5"
-                          value={input.rpe}
-                          onChange={(e) => updateSetInput(movement.id, 'rpe', e.target.value)}
-                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Tempo</Label>
-                        <Input
-                          placeholder="3-1-1"
-                          value={input.tempo}
-                          onChange={(e) => updateSetInput(movement.id, 'tempo', e.target.value)}
-                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Notes</Label>
-                        <Input
-                          placeholder="Good form"
-                          value={input.notes}
-                          onChange={(e) => updateSetInput(movement.id, 'notes', e.target.value)}
-                          className="h-12 text-base bg-white border-gray-200 rounded-xl"
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={() => logSet(movement.id)}
-                      disabled={!input.weightKg || !input.reps || logSetMutation.isPending}
-                      className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {logSetMutation.isPending ? (
-                        <div className="flex items-center gap-3">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Logging...
-                        </div>
-                      ) : (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Log Set
-                        </>
+                  return (
+                    <div
+                      key={movement.id}
+                      className={cn(
+                        "bg-white rounded-3xl p-8 border transition-all duration-300",
+                        isFocused
+                          ? "border-blue-300 shadow-lg shadow-blue-100/50 scale-[1.01]"
+                          : "border-gray-200/50 hover:border-gray-300/50"
                       )}
+                    >
+                      <div className="flex items-center justify-between mb-8">
+                        <div>
+                          <h3 className="text-2xl font-semibold text-gray-900 mb-2">{movement.name}</h3>
+                          <div className="flex items-center gap-4">
+                            <span className="text-gray-600">{movement.muscleGroups?.join(', ')}</span>
+                            {movement.isCompound && (
+                              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium">
+                                Compound
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            onClick={() => setFocusedExercise(isFocused ? null : movement.id)}
+                            className={cn(
+                              "rounded-xl px-4 py-2 font-medium transition-all duration-200",
+                              isFocused
+                                ? "bg-blue-100 hover:bg-blue-200 text-blue-700"
+                                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            )}
+                          >
+                            <Target className="h-4 w-4 mr-2" />
+                            {isFocused ? 'Unfocus' : 'Focus'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Previous sets */}
+                      {sets.length > 0 && (
+                        <div className="mb-8">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Sets Completed</h4>
+                          <div className="space-y-3">
+                            {sets.map((set: any, index) => (
+                              <div
+                                key={set.id}
+                                className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200/50"
+                              >
+                                <div className="flex items-center gap-6">
+                                  <span className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-sm font-semibold text-gray-700">
+                                    {index + 1}
+                                  </span>
+                                  <div className="flex items-center gap-6 text-base">
+                                    <span className="font-semibold text-gray-900">{set.weightKg}kg × {set.reps}</span>
+                                    {set.rpe && <span className="text-gray-600">RPE {set.rpe}</span>}
+                                    {set.tempo && <span className="text-gray-600">{set.tempo}</span>}
+                                    {set.notes && <span className="text-gray-600 italic">"{set.notes}"</span>}
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() => deleteSet(set.id)}
+                                  disabled={deleteSetMutation.isPending}
+                                  className="bg-red-50 hover:bg-red-100 text-red-600 rounded-xl px-3 py-2"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Smart Set Input */}
+                      <SmartSetInput
+                        weightKg={input.weightKg}
+                        reps={input.reps}
+                        rpe={input.rpe}
+                        tempo={input.tempo}
+                        notes={input.notes}
+                        onChange={(field, value) => updateSetInput(movement.id, field as keyof SetInput, value)}
+                        onSubmit={() => logSet(movement.id)}
+                        isSubmitting={logSetMutation.isPending}
+                        setNumber={sets.length + 1}
+                      />
+                    </div>
+                  )
+                })}
+
+                {/* Empty state */}
+                {movementsInSession.length === 0 && (
+                  <div className="bg-white rounded-3xl p-12 text-center border border-gray-200/50">
+                    <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Ready to Start Training</h3>
+                    <p className="text-gray-500 mb-6">
+                      Add exercises to your {DAY_TYPE_NAMES[dayType]} workout to get started
+                    </p>
+                    <Button
+                      onClick={() => setShowExerciseSearch(true)}
+                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-6 py-3"
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      Add First Exercise
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Rest Timer */}
+                <div className="bg-white rounded-3xl p-6 border border-gray-200/50">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Rest Timer
+                  </h3>
+                  <Timer initialSeconds={180} />
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-white rounded-3xl p-6 border border-gray-200/50">
+                  <h3 className="font-semibold mb-4">Quick Actions</h3>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate({ to: '/progress' })}
+                    >
+                      <TrendUp className="h-4 w-4 mr-2" />
+                      View Progress
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate({ to: '/history' })}
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Session History
                     </Button>
                   </div>
                 </div>
-              )
-            })}
 
-            {/* Empty state */}
-            {movementsInSession.length === 0 && (
-              <div className="glass rounded-2xl p-12 text-center">
-                <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Ready to Start Training</h3>
-                <p className="text-muted-foreground mb-6">
-                  Add exercises to your {DAY_TYPE_NAMES[dayType]} workout to get started
-                </p>
-                <Button
-                  onClick={() => setShowExerciseSearch(true)}
-                  size="lg"
-                  className="btn-hover"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Add First Exercise
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Rest Timer */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Rest Timer
-              </h3>
-              <Timer initialSeconds={180} />
-            </div>
-
-            {/* Quick Actions */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="font-semibold mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate({ to: '/progress' })}
-                >
-                  <TrendUp className="h-4 w-4 mr-2" />
-                  View Progress
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate({ to: '/history' })}
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Session History
-                </Button>
-              </div>
-            </div>
-
-            {/* Session Summary */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="font-semibold mb-4">Session Summary</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span className="font-medium">Active</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Exercises:</span>
-                  <span className="font-medium">{movementsInSession.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Sets:</span>
-                  <span className="font-medium">{session.data.setLogs.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Volume:</span>
-                  <span className="font-medium">{Math.round(totalVolume).toLocaleString()} kg</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Avg RPE:</span>
-                  <span className="font-medium">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</span>
+                {/* Session Summary */}
+                <div className="bg-white rounded-3xl p-6 border border-gray-200/50">
+                  <h3 className="font-semibold mb-4">Session Summary</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Duration:</span>
+                      <span className="font-medium">Active</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Exercises:</span>
+                      <span className="font-medium">{movementsInSession.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Total Sets:</span>
+                      <span className="font-medium">{session.data.setLogs.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Volume:</span>
+                      <span className="font-medium">{Math.round(totalVolume).toLocaleString()} kg</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Avg RPE:</span>
+                      <span className="font-medium">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
-    </div>
+      <SuccessFeedback
+        show={feedback.show}
+        type={feedback.type}
+        message={feedback.message}
+        details={feedback.details}
+        onComplete={hideSuccess}
+      />
+    </>
   )
 }

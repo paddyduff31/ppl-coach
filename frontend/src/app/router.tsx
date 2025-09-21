@@ -10,15 +10,20 @@ import IntervalTimer from '../pages/IntervalTimer'
 import WorkoutHistory from '../pages/WorkoutHistory'
 import { Navigation } from '../components/Navigation'
 import { GlobalShortcuts } from '../components/GlobalShortcuts'
+import { useGlobalShortcuts } from '../hooks/useKeyboardShortcuts'
 
 const rootRoute = createRootRoute({
-  component: () => (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <Outlet />
-      <GlobalShortcuts />
-    </div>
-  ),
+  component: () => {
+    useGlobalShortcuts() // Enable global keyboard shortcuts
+
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <Outlet />
+        <GlobalShortcuts />
+      </div>
+    )
+  },
 })
 
 const indexRoute = createRoute({
