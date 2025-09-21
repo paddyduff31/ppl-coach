@@ -39,6 +39,9 @@ builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IMovementService, MovementService>();
 builder.Services.AddScoped<IProgressService, ProgressService>();
 
+// Health integration service (if needed for Apple Health features)
+builder.Services.AddScoped<IHealthIntegrationService, HealthIntegrationService>();
+
 // Add AutoMapper
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 

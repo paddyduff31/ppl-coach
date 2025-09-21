@@ -106,24 +106,26 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="pt-16 pb-12 px-8 border-b border-gray-100 animate-fade-in-up">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="inline-flex items-center gap-3 mb-4 animate-scale-in">
-                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
-                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Account Settings
-                </span>
-              </div>
-              <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2">
-                Settings
-              </h1>
-              <p className="text-lg text-gray-600">
-                Personalize your training experience
-              </p>
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 mb-6 animate-scale-in">
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-gray-500 to-gray-600" />
+              <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                Account Settings
+              </span>
             </div>
+            <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-4 animate-fade-in-up">
+              Settings
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-up">
+              Personalize your training experience and manage your account
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex justify-center mt-8">
             <div className="flex gap-3">
               {isEditing ? (
                 <>

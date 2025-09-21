@@ -8,6 +8,8 @@ import Settings from '../pages/Settings'
 import Movements from '../pages/Movements'
 import IntervalTimer from '../pages/IntervalTimer'
 import WorkoutHistory from '../pages/WorkoutHistory'
+import Calendar from '../pages/Calendar'
+import Integrations from '../pages/Integrations'
 import { Navigation } from '../components/Navigation'
 import { GlobalShortcuts } from '../components/GlobalShortcuts'
 import { useGlobalShortcuts } from '../hooks/useKeyboardShortcuts'
@@ -88,6 +90,18 @@ const workoutHistoryRoute = createRoute({
   component: WorkoutHistory,
 })
 
+const calendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/calendar',
+  component: Calendar,
+})
+
+const integrationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/integrations',
+  component: Integrations,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   onboardingRoute,
@@ -98,6 +112,8 @@ const routeTree = rootRoute.addChildren([
   movementsRoute,
   intervalTimerRoute,
   workoutHistoryRoute,
+  calendarRoute,
+  integrationsRoute,
 ])
 
 export const router = createRouter({ routeTree })

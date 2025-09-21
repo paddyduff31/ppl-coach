@@ -98,145 +98,117 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto">
-        {/* Header with subtle divider */}
-        <div className="pt-16 pb-12 px-8 border-b border-gray-100 animate-fade-in-up">
+        {/* Streamlined Header - Most Important Info First */}
+        <div className="pt-16 pb-8 px-8 animate-fade-in-up">
           <div className="text-center">
-            <div className="inline-flex items-center gap-3 mb-6 animate-scale-in">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isTodayComplete ? "bg-green-500" : `bg-gradient-to-r ${DAY_TYPE_COLORS[nextDayType].replace('/20', '')}`
-              )} />
-              <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                {isTodayComplete ? 'Completed' : nextDayName + ' Day'}
-              </span>
-            </div>
-            <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-4 animate-fade-in-up">
-              {isTodayComplete ? 'Well done!' : `Ready for ${nextDayName}?`}
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-up">
-              {isTodayComplete
-                ? "You've completed today's workout. Come back tomorrow for your next session."
-                : totalSessions === 0
-                  ? "Start your fitness journey with a simple, effective Push/Pull/Legs split."
-                  : nextDayDescription
-              }
-            </p>
-          </div>
-        </div>
-
-        {/* Main Action Section */}
-        <div className="px-8 py-12">
-          {!isTodayComplete && (
-            <div className="bg-gray-50 rounded-3xl p-12 border border-gray-200/50 transition-all duration-300 hover:border-gray-300/50 animate-scale-in hover:scale-[1.01]">
-              <div className="flex items-center justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center",
-                      `bg-gradient-to-br ${DAY_TYPE_COLORS[nextDayType].replace('/20', '/10')}`
-                    )}>
-                      <Target className="h-6 w-6 text-gray-700" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-semibold text-gray-900">
-                        {nextDayName} Day
-                      </h2>
-                      {lastWorkout && (
-                        <p className="text-gray-500 text-sm mt-1">
-                          Last workout: {lastWorkout.dayName} • {new Date(lastWorkout.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+            {isTodayComplete ? (
+              /* Completed State - Celebrate Success */
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-3 mb-4">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span className="text-sm font-medium text-green-600 uppercase tracking-wider">
+                    Today Complete
+                  </span>
                 </div>
-                <Button
-                  onClick={startNextWorkout}
-                  disabled={createSessionMutation.isPending || userLoading}
-                  className="h-14 px-8 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-medium text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {createSessionMutation.isPending ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Starting...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <Play className="h-5 w-5" />
-                      Start Workout
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Today Complete State */}
-          {isTodayComplete && (
-            <div className="bg-green-50 rounded-3xl p-12 border border-green-200/50">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <Lightning className="h-10 w-10 text-green-600" />
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Lightning className="h-8 w-8 text-green-600" />
                 </div>
-                <h2 className="text-3xl font-semibold mb-3 text-green-900">Workout Complete!</h2>
-                <p className="text-green-700 text-lg mb-8">
-                  Great job finishing today's {lastWorkout?.dayName} session
+                <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-3">
+                  Well done!
+                </h1>
+                <p className="text-xl text-gray-600 mb-6">
+                  {lastWorkout?.dayName} session completed • {workoutStreak} day streak
                 </p>
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-green-100 rounded-2xl text-base font-medium text-green-800">
-                  <Lightning className="h-5 w-5" />
-                  {workoutStreak} day streak
+                <div className="inline-flex items-center gap-4 px-6 py-3 bg-green-50 rounded-2xl border border-green-200">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                  <span className="text-green-800 font-medium">
+                    Come back tomorrow for your next workout
+                  </span>
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              /* Ready State - Focus on Next Action */
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-3 mb-4">
+                  <div className={cn(
+                    "w-3 h-3 rounded-full",
+                    `bg-gradient-to-r ${DAY_TYPE_COLORS[nextDayType].replace('/20', '')}`
+                  )} />
+                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    {nextDayName} Day Ready
+                  </span>
+                </div>
+                <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-4">
+                  Ready for {nextDayName}?
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                  {totalSessions === 0
+                    ? "Start your fitness journey with a simple, effective Push/Pull/Legs split."
+                    : nextDayDescription
+                  }
+                </p>
+                
+                {/* Primary Action - Most Prominent */}
+                <div className="flex justify-center">
+                  <Button
+                    onClick={startNextWorkout}
+                    disabled={createSessionMutation.isPending || userLoading}
+                    className="h-16 px-12 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-semibold text-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-2xl"
+                  >
+                    {createSessionMutation.isPending ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Starting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <Play className="h-6 w-6" />
+                        Start {nextDayName} Workout
+                        {lastWorkout && (
+                          <span className="text-sm opacity-75">
+                            Last: {new Date(lastWorkout.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="px-8 pb-12">
-          <div className="grid md:grid-cols-4 gap-6 animate-stagger">
-            <div className="bg-white rounded-2xl p-8 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-200 group hover:scale-[1.02] animate-fade-in-up">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">This Week</span>
+        {/* Key Metrics - Only Most Important Stats */}
+        <div className="px-8 py-8 border-t border-gray-100">
+          <div className="grid md:grid-cols-3 gap-8 animate-stagger">
+            <div className="text-center group">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
+                <Calendar className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="text-3xl font-semibold text-gray-900">{sessionStats.thisWeekSessions}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{sessionStats.thisWeekSessions}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">This Week</div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-200 group hover:scale-[1.02] animate-fade-in-up">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center group-hover:bg-orange-100 transition-colors">
-                  <Lightning className="h-5 w-5 text-orange-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Streak</span>
+            <div className="text-center group">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-100 transition-colors">
+                <Lightning className="h-6 w-6 text-orange-600" />
               </div>
-              <div className="text-3xl font-semibold text-gray-900">{sessionStats.workoutStreak}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{sessionStats.workoutStreak}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">Day Streak</div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-200 group hover:scale-[1.02] animate-fade-in-up">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center group-hover:bg-green-100 transition-colors">
-                  <TrendUp className="h-5 w-5 text-green-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total</span>
+            <div className="text-center group">
+              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-100 transition-colors">
+                <Target className="h-6 w-6 text-purple-600" />
               </div>
-              <div className="text-3xl font-semibold text-gray-900">{sessionStats.totalSessions}</div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-200 group hover:scale-[1.02] animate-fade-in-up">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-                  <Target className="h-5 w-5 text-purple-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Volume</span>
-              </div>
-              <div className="text-3xl font-semibold text-gray-900">{Math.round(sessionStats.totalVolume).toLocaleString()}<span className="text-lg text-gray-500 ml-1">kg</span></div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{Math.round(sessionStats.totalVolume).toLocaleString()}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">Total Volume (kg)</div>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="px-8 pb-12">
+        {/* Quick Actions - Secondary Priority */}
+        <div className="px-8 py-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Link to="/history" className="group">
               <div className="bg-white rounded-2xl p-8 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-200 hover:scale-[1.01]">
@@ -303,19 +275,73 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* First-time user guidance */}
-        {totalSessions === 0 && (
+        {/* Recent Activity - Tertiary Priority */}
+        {allSessions.length > 0 && (
           <div className="px-8 pb-12">
-            <div className="bg-white rounded-3xl p-12 border border-gray-200/50">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-semibold text-gray-900 mb-4">Getting Started with PPL</h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                  Push/Pull/Legs is a simple, effective split that works for beginners and advanced lifters alike.
-                  Each muscle group gets focused work and adequate recovery.
+            <div className="bg-white rounded-3xl p-8 border border-gray-200/50">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+                <Link to="/history">
+                  <Button variant="outline" className="text-sm">
+                    View All
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                {allSessions.slice(0, 3).map((session, i) => {
+                  const setLogs = session.setLogs || []
+                  const totalSets = setLogs.length
+                  const sessionVolume = setLogs.reduce((sum, set) => sum + (set.weightKg * set.reps), 0)
+
+                  return (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all duration-200 cursor-pointer group"
+                      onClick={() => navigate({ to: '/log/$id', params: { id: session.id } })}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-3 h-3 rounded-full ${DAY_TYPE_COLORS[session.dayType as keyof typeof DAY_TYPE_COLORS].replace('from-', 'bg-').split(' ')[0].replace('/20', '')}`} />
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {DAY_TYPE_NAMES[session.dayType as keyof typeof DAY_TYPE_NAMES]} Day
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(session.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">{totalSets} sets</div>
+                          <div className="text-xs text-gray-500">{Math.round(sessionVolume)}kg</div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* First-time user guidance - Only show when truly needed */}
+        {totalSessions === 0 && !isTodayComplete && (
+          <div className="px-8 pb-12">
+            <div className="bg-gray-50 rounded-3xl p-12 border border-gray-200/50">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-3">Getting Started with PPL</h3>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Push/Pull/Legs is a simple, effective split. Each muscle group gets focused work and adequate recovery.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8 mb-12">
+              <div className="grid md:grid-cols-3 gap-6">
                 {[
                   {
                     type: 'Push',
@@ -325,7 +351,7 @@ export default function Dashboard() {
                   },
                   {
                     type: 'Pull',
-                    color: 'green',
+                    color: 'green', 
                     description: 'Back, biceps, rear delts',
                     exercises: ['Pull-ups', 'Rows', 'Curls']
                   },
@@ -336,88 +362,21 @@ export default function Dashboard() {
                     exercises: ['Squats', 'Deadlifts', 'Lunges']
                   }
                 ].map((day, i) => (
-                  <div key={day.type} className="text-center">
-                    <div className={`w-20 h-20 bg-${day.color}-50 rounded-3xl flex items-center justify-center mx-auto mb-6`}>
-                      <Target className={`h-10 w-10 text-${day.color}-600`} />
+                  <div key={day.type} className="text-center p-6 bg-white rounded-2xl border border-gray-200">
+                    <div className={`w-12 h-12 bg-${day.color}-50 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                      <Target className={`h-6 w-6 text-${day.color}-600`} />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">{day.type} Day</h3>
-                    <p className="text-gray-600 mb-6">{day.description}</p>
-                    <div className="space-y-2">
+                    <h4 className="font-semibold text-gray-900 mb-2">{day.type} Day</h4>
+                    <p className="text-sm text-gray-600 mb-4">{day.description}</p>
+                    <div className="space-y-1">
                       {day.exercises.map(exercise => (
-                        <div key={exercise} className="text-sm text-gray-500 bg-gray-50 rounded-xl px-4 py-2">
+                        <div key={exercise} className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
                           {exercise}
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="text-center">
-                <Button
-                  onClick={startNextWorkout}
-                  disabled={createSessionMutation.isPending || userLoading}
-                  className="h-14 px-8 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-medium text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <Play className="h-5 w-5 mr-3" />
-                  Start Your First Workout
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Recent Sessions */}
-        {allSessions.length > 0 && (
-          <div className="px-8 pb-12">
-            <div className="bg-white rounded-3xl p-8 border border-gray-200/50">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-semibold text-gray-900">Recent Sessions</h2>
-                <Link to="/history">
-                  <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-2 font-medium transition-all duration-200">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="space-y-4">
-                {allSessions.slice(0, 3).map((session, i) => {
-                  const setLogs = session.setLogs || []
-                  const totalSets = setLogs.length
-                  const sessionVolume = setLogs.reduce((sum, set) => sum + (set.weightKg * set.reps), 0)
-
-                  return (
-                    <div
-                      key={session.id}
-                      className="flex items-center justify-between p-6 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all duration-200 cursor-pointer group"
-                      onClick={() => navigate({ to: '/log/$id', params: { id: session.id } })}
-                    >
-                      <div className="flex items-center space-x-6">
-                        <div className={`w-4 h-4 rounded-full ${DAY_TYPE_COLORS[session.dayType as keyof typeof DAY_TYPE_COLORS].replace('from-', 'bg-').split(' ')[0].replace('/20', '')}`} />
-                        <div>
-                          <div className="font-semibold text-gray-900">
-                            {DAY_TYPE_NAMES[session.dayType as keyof typeof DAY_TYPE_NAMES]} Day
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            {new Date(session.date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-6">
-                        <div className="text-right">
-                          <div className="font-semibold text-gray-900">{totalSets} sets</div>
-                          <div className="text-sm text-gray-500">{Math.round(sessionVolume)}kg volume</div>
-                        </div>
-                        <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                      </div>
-                    </div>
-                  )
-                })}
               </div>
             </div>
           </div>
@@ -426,3 +385,4 @@ export default function Dashboard() {
     </div>
   )
 }
+

@@ -1,18 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
 import { Badge } from '../components/ui/badge'
 import { 
   Calendar, 
   Barbell, 
   Target, 
-  ArrowLeft,
+  Clock,
   Eye,
-  ChartLine
+  ChartLine,
+  Lightning,
+  TrendUp,
+  Play,
+  MagnifyingGlass,
+  Funnel
 } from '@phosphor-icons/react'
-import { useUser } from '../hooks/useUser'
-import { useUserSessions } from '../hooks/useSessions'
+import { useUserSessions, useSessionStats } from '../hooks/useSessions'
+import { cn } from '../utils/utils'
 
 const DAY_TYPE_NAMES = {
   1: 'Push',
@@ -28,35 +33,36 @@ const DAY_TYPE_COLORS = {
 
 export default function WorkoutHistory() {
   const navigate = useNavigate()
-  const { userId } = useUser()
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month')
+  const [searchQuery, setSearchQuery] = useState('')
   
-  // Calculate date range based on selected period
-  const getDateRange = () => {
-    const now = new Date()
-    switch (selectedPeriod) {
-      case 'week':
-        const weekAgo = new Date(now)
-        weekAgo.setDate(now.getDate() - 7)
-        return {
-          startDate: weekAgo.toISOString().split('T')[0],
-          endDate: now.toISOString().split('T')[0]
-        }
-      case 'month':
-        const monthAgo = new Date(now)
-        monthAgo.setDate(now.getDate() - 30)
-        return {
-          startDate: monthAgo.toISOString().split('T')[0],
-          endDate: now.toISOString().split('T')[0]
-        }
-      case 'all':
-        return { startDate: undefined, endDate: undefined }
-    }
-  }
+  const { data: allSessions = [], isLoading } = useUserSessions()
+  const sessionStats = useSessionStats(allSessions)
 
-  const { startDate, endDate } = getDateRange()
-  const { data: sessionsResponse, isLoading } = useUserSessions(userId!, startDate, endDate)
-  const sessions = sessionsResponse?.data || []
+  // Filter sessions based on period and search
+  const filteredSessions = allSessions.filter(session => {
+    const sessionDate = new Date(session.date)
+    const now = new Date()
+    
+    // Period filter
+    let withinPeriod = true
+    if (selectedPeriod === 'week') {
+      const weekAgo = new Date(now)
+      weekAgo.setDate(now.getDate() - 7)
+      withinPeriod = sessionDate >= weekAgo
+    } else if (selectedPeriod === 'month') {
+      const monthAgo = new Date(now)
+      monthAgo.setDate(now.getDate() - 30)
+      withinPeriod = sessionDate >= monthAgo
+    }
+
+    // Search filter
+    const matchesSearch = searchQuery === '' || 
+      DAY_TYPE_NAMES[session.dayType as keyof typeof DAY_TYPE_NAMES].toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return withinPeriod && matchesSearch
+  })
 
   const calculateSessionStats = (session: any) => {
     const setLogs = session.setLogs || []
@@ -64,12 +70,12 @@ export default function WorkoutHistory() {
       sum + (set.weightKg * set.reps), 0
     )
     const avgRpe = setLogs.length > 0 
-      ? setLogs.reduce((sum: number, set: any) => sum + set.rpe, 0) / setLogs.length 
+      ? setLogs.reduce((sum: number, set: any) => sum + (set.rpe || 0), 0) / setLogs.length 
       : 0
     
     return {
       totalVolume: Math.round(totalVolume),
-      avgRpe: avgRpe.toFixed(1),
+      avgRpe: avgRpe > 0 ? avgRpe.toFixed(1) : 'N/A',
       setCount: setLogs.length,
       exerciseCount: new Set(setLogs.map((set: any) => set.movementId)).size
     }
@@ -82,212 +88,272 @@ export default function WorkoutHistory() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric',
+      year: 'numeric' 
+    })
+  }
+
+  const formatDateShort = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric' 
     })
   }
 
-  const getPeriodStats = () => {
-    if (sessions.length === 0) return null
-
-    const totalSessions = sessions.length
-    const totalSets = sessions.reduce((sum, session) => sum + (session.setLogs?.length || 0), 0)
-    const totalVolume = sessions.reduce((sum, session) => {
-      const sessionVolume = (session.setLogs || []).reduce((s: number, set: any) => 
-        s + (set.weightKg * set.reps), 0
-      )
-      return sum + sessionVolume
-    }, 0)
-
-    return {
-      totalSessions,
-      totalSets,
-      totalVolume: Math.round(totalVolume)
-    }
-  }
-
-  const stats = getPeriodStats()
-
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: '/' })}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Workout History</h1>
-            <p className="text-muted-foreground">View and analyze your past workout sessions</p>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="pt-16 pb-12 px-8 border-b border-gray-100 animate-fade-in-up">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 mb-6 animate-scale-in">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                Workout History
+              </span>
+            </div>
+            <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-4 animate-fade-in-up">
+              Your Training Journey
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-up">
+              {filteredSessions.length > 0 
+                ? `${filteredSessions.length} sessions in the ${selectedPeriod === 'all' ? 'total' : `last ${selectedPeriod}`}`
+                : "Your workout history will appear here as you train"
+              }
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Period Filter */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Filter by Period
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            {[
-              { key: 'week', label: 'Last 7 Days' },
-              { key: 'month', label: 'Last 30 Days' },
-              { key: 'all', label: 'All Time' }
-            ].map((period) => (
-              <Button
-                key={period.key}
-                variant={selectedPeriod === period.key ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedPeriod(period.key as any)}
-              >
-                {period.label}
-              </Button>
-            ))}
+        {/* Key Metrics */}
+        <div className="px-8 py-8 border-t border-gray-100">
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{sessionStats.thisWeekSessions}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">This Week</div>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Lightning className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{sessionStats.workoutStreak}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">Current Streak</div>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <TrendUp className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{sessionStats.totalSessions}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">Total Sessions</div>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Target className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{Math.round(sessionStats.totalVolume).toLocaleString()}</div>
+              <div className="text-sm text-gray-500 uppercase tracking-wider">Total Volume (kg)</div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Period Stats */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <ChartLine className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalSessions}</p>
-                  <p className="text-sm text-muted-foreground">Sessions</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalSets}</p>
-                  <p className="text-sm text-muted-foreground">Total Sets</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <Barbell className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalVolume.toLocaleString()} kg</p>
-                  <p className="text-sm text-muted-foreground">Total Volume</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      )}
 
-      {/* Sessions List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Workout Sessions</CardTitle>
-          <CardDescription>
-            {sessions.length === 0 
-              ? 'No sessions found for the selected period'
-              : `${sessions.length} session${sessions.length === 1 ? '' : 's'} found`
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Filters and Search */}
+        <div className="px-8 py-6 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative flex-1 max-w-md">
+              <MagnifyingGlass className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <Input
+                placeholder="Search workouts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 border-gray-200 rounded-xl bg-white"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              {[
+                { key: 'week', label: 'This Week' },
+                { key: 'month', label: 'This Month' },
+                { key: 'all', label: 'All Time' }
+              ].map((period) => (
+                <Button
+                  key={period.key}
+                  variant={selectedPeriod === period.key ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod(period.key as any)}
+                  className="rounded-xl"
+                >
+                  {period.label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Funnel className="h-4 w-4" />
+              {filteredSessions.length} sessions
+            </div>
+          </div>
+        </div>
+
+        {/* Sessions List */}
+        <div className="px-8 py-8">
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground mt-2">Loading sessions...</p>
+            <div className="text-center py-12">
+              <div className="text-gray-500">Loading workout history...</div>
             </div>
-          ) : sessions.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Workouts Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Start your first workout to see it appear here
-              </p>
-              <Button onClick={() => navigate({ to: '/plan' })}>
-                Start Your First Workout
-              </Button>
-            </div>
-          ) : (
+          ) : filteredSessions.length > 0 ? (
             <div className="space-y-4">
-              {sessions.map((session) => {
+              {filteredSessions.map((session) => {
                 const stats = calculateSessionStats(session)
                 const dayType = session.dayType as keyof typeof DAY_TYPE_NAMES
                 
                 return (
                   <div
                     key={session.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    className="bg-white rounded-2xl border border-gray-200 p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                    onClick={() => viewSession(session.id)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-3 h-3 rounded-full ${DAY_TYPE_COLORS[dayType]}`} />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium capitalize">
-                            {DAY_TYPE_NAMES[dayType]} Day
-                          </h3>
-                          <Badge variant="outline" className="text-xs">
-                            {stats.setCount} sets
-                          </Badge>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4">
+                          <div className={cn("w-3 h-3 rounded-full", DAY_TYPE_COLORS[dayType])} />
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900">
+                              {DAY_TYPE_NAMES[dayType]} Day
+                            </h3>
+                            <p className="text-gray-600">{formatDate(session.date)}</p>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(session.date)}
-                        </p>
-                        {session.notes && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {session.notes}
-                          </p>
-                        )}
+
+                        <div className="grid grid-cols-4 gap-6 text-center">
+                          <div>
+                            <div className="text-lg font-bold text-gray-900">{stats.exerciseCount}</div>
+                            <div className="text-xs text-gray-500">Exercises</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-gray-900">{stats.setCount}</div>
+                            <div className="text-xs text-gray-500">Sets</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-gray-900">{stats.totalVolume.toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">Volume (kg)</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-gray-900">{stats.avgRpe}</div>
+                            <div className="text-xs text-gray-500">Avg RPE</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            viewSession(session.id)
+                          }}
+                          className="rounded-xl"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                        <div className="text-gray-400 group-hover:text-gray-600 transition-colors">
+                          <ChartLine className="h-5 w-5" />
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-6 text-sm">
-                      <div className="text-right">
-                        <p className="font-medium">{stats.totalVolume.toLocaleString()} kg</p>
-                        <p className="text-muted-foreground">Volume</p>
+
+                    {session.notes && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-sm text-gray-600 italic">"{session.notes}"</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">RPE {stats.avgRpe}</p>
-                        <p className="text-muted-foreground">Avg RPE</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{stats.exerciseCount}</p>
-                        <p className="text-muted-foreground">Exercises</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => viewSession(session.id)}
-                        className="flex items-center gap-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View Details
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 )
               })}
             </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Clock className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {searchQuery ? 'No matching workouts' : 'No workouts yet'}
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {searchQuery 
+                  ? `No sessions match "${searchQuery}" in the selected time period`
+                  : 'Start your first workout to see your training history here'
+                }
+              </p>
+              {!searchQuery && (
+                <Button
+                  onClick={() => navigate({ to: '/' })}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-6 py-3"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Start First Workout
+                </Button>
+              )}
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Quick Actions */}
+        {filteredSessions.length > 0 && (
+          <div className="px-8 py-8 border-t border-gray-100">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <ChartLine className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Detailed Analytics</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  View comprehensive progress charts and trends
+                </p>
+                <Button
+                  onClick={() => navigate({ to: '/progress' })}
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full rounded-xl"
+                >
+                  View Progress
+                </Button>
+              </div>
+
+              <div className="bg-green-50 rounded-2xl p-6 border border-green-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Target className="h-5 w-5 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Start New Workout</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Continue your training with a new session
+                </p>
+                <Button
+                  onClick={() => navigate({ to: '/' })}
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full rounded-xl"
+                >
+                  Go to Dashboard
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

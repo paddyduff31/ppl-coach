@@ -171,305 +171,314 @@ export default function IntervalTimer() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-12">
-        {/* Hero Header */}
-        <div className="text-center space-y-6">
-          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <TimerIcon className="h-5 w-5 text-white" />
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="pt-16 pb-12 px-8 border-b border-gray-100 animate-fade-in-up">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 mb-6 animate-scale-in">
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-red-500" />
+              <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                Interval Training
+              </span>
             </div>
-            <span className="text-sm font-medium text-gray-600">Interval Training</span>
-          </div>
-
-          <div className="space-y-3">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-4 animate-fade-in-up">
               Elite Interval Timer
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Transform your cardio with scientifically-proven interval protocols.
-              Get stronger, faster, and fitter with precision timing.
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-up">
+              Transform your cardio with scientifically-proven interval protocols. Get stronger, faster, and fitter with precision timing.
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-4">
-            <Button
-              variant={!showCustom ? 'default' : 'outline'}
-              onClick={() => setShowCustom(false)}
-              className="px-6 py-3 rounded-2xl font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
-            >
-              <Sparkle className="h-4 w-4 mr-2" />
-              Preset Workouts
-            </Button>
-            <Button
-              variant={showCustom ? 'default' : 'outline'}
-              onClick={() => setShowCustom(true)}
-              className="px-6 py-3 rounded-2xl font-medium bg-gray-900 text-white hover:bg-gray-800 transition-all duration-200"
-            >
-              <Gauge className="h-4 w-4 mr-2" />
-              Custom Timer
-            </Button>
+          {/* Tab Selection */}
+          <div className="flex justify-center mt-8">
+            <div className="flex items-center gap-4">
+              <Button
+                variant={!showCustom ? 'default' : 'outline'}
+                onClick={() => setShowCustom(false)}
+                className="px-6 py-3 rounded-2xl font-medium"
+              >
+                <Sparkle className="h-4 w-4 mr-2" />
+                Preset Workouts
+              </Button>
+              <Button
+                variant={showCustom ? 'default' : 'outline'}
+                onClick={() => setShowCustom(true)}
+                className="px-6 py-3 rounded-2xl font-medium"
+              >
+                <Gauge className="h-4 w-4 mr-2" />
+                Custom Timer
+              </Button>
+            </div>
           </div>
         </div>
 
-        {!showCustom ? (
-          /* Preset Workouts */
-          <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Choose Your Protocol</h2>
-              <p className="text-lg text-gray-600">Elite training methods used by world-class athletes</p>
-            </div>
+        {/* Content */}
+        <div className="px-8 py-12">
+          {!showCustom ? (
+            /* Preset Workouts */
+            <div className="space-y-8">
+              <div className="text-center">
+                <h2 className="text-3xl font-bold text-gray-900 mb-3">Choose Your Protocol</h2>
+                <p className="text-lg text-gray-600">Elite training methods used by world-class athletes</p>
+              </div>
 
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {PRESET_INTERVALS.map((preset, index) => {
-                const IconComponent = preset.icon
-                const IntensityIcon = getIntensityIcon(preset.intensity)
+              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {PRESET_INTERVALS.map((preset, index) => {
+                  const IconComponent = preset.icon
+                  const IntensityIcon = getIntensityIcon(preset.intensity)
 
-                return (
-                  <div
-                    key={preset.name}
-                    className={cn(
-                      "group relative cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1",
-                      selectedPreset?.name === preset.name ? 'scale-[1.02] -translate-y-1' : ''
-                    )}
-                    style={{ animationDelay: `${index * 100}ms` }}
-                    onClick={() => setSelectedPreset(preset)}
-                  >
-                    <div className={cn(
-                      "relative bg-white rounded-3xl border-2 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl",
-                      selectedPreset?.name === preset.name
-                        ? 'border-gray-900 shadow-2xl'
-                        : 'border-gray-100 hover:border-gray-200'
-                    )}>
-                      {/* Gradient Header */}
+                  return (
+                    <div
+                      key={preset.name}
+                      className={cn(
+                        "group relative cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1",
+                        selectedPreset?.name === preset.name ? 'scale-[1.02] -translate-y-1' : ''
+                      )}
+                      style={{ animationDelay: `${index * 100}ms` }}
+                      onClick={() => setSelectedPreset(preset)}
+                    >
                       <div className={cn(
-                        "h-24 bg-gradient-to-r relative overflow-hidden",
-                        getIntensityColor(preset.intensity)
+                        "relative bg-white rounded-3xl border-2 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl",
+                        selectedPreset?.name === preset.name
+                          ? 'border-gray-900 shadow-2xl'
+                          : 'border-gray-100 hover:border-gray-200'
                       )}>
-                        <div className="absolute inset-0 bg-black/10" />
-                        <div className="absolute top-4 left-6 flex items-center gap-3">
-                          <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                            <IconComponent className="h-6 w-6 text-white" />
+                        {/* Clean Header - No gradients */}
+                        <div className="h-24 bg-gray-50 border-b border-gray-200 relative">
+                          <div className="h-full flex items-center justify-between px-6">
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "w-10 h-10 rounded-2xl flex items-center justify-center",
+                                preset.intensity === 'high' ? "bg-red-100" :
+                                preset.intensity === 'medium' ? "bg-blue-100" :
+                                "bg-green-100"
+                              )}>
+                                <IconComponent className={cn(
+                                  "h-6 w-6",
+                                  preset.intensity === 'high' ? "text-red-600" :
+                                  preset.intensity === 'medium' ? "text-blue-600" :
+                                  "text-green-600"
+                                )} />
+                              </div>
+                              <div>
+                                <h3 className="text-gray-900 font-bold text-lg">{preset.name}</h3>
+                                <div className="flex items-center gap-1 text-gray-600 text-sm">
+                                  <IntensityIcon className="h-3 w-3" />
+                                  <span className="capitalize">{preset.intensity} intensity</span>
+                                </div>
+                              </div>
+                            </div>
+                            {selectedPreset?.name === preset.name && (
+                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                <div className="w-3 h-3 bg-green-500 rounded-full" />
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <h3 className="text-white font-bold text-lg">{preset.name}</h3>
-                            <div className="flex items-center gap-1 text-white/80 text-sm">
-                              <IntensityIcon className="h-3 w-3" />
-                              <span className="capitalize">{preset.intensity} intensity</span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-4">
+                          <p className="text-gray-600 text-sm leading-relaxed">{preset.description}</p>
+
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="text-center p-3 bg-gray-50 rounded-2xl">
+                              <div className="text-2xl font-bold text-gray-900">{formatTime(preset.workTime)}</div>
+                              <div className="text-xs text-gray-500 font-medium">Work</div>
+                            </div>
+                            <div className="text-center p-3 bg-gray-50 rounded-2xl">
+                              <div className="text-2xl font-bold text-gray-900">{formatTime(preset.restTime)}</div>
+                              <div className="text-xs text-gray-500 font-medium">Rest</div>
+                            </div>
+                            <div className="text-center p-3 bg-gray-50 rounded-2xl">
+                              <div className="text-2xl font-bold text-gray-900">{preset.rounds}</div>
+                              <div className="text-xs text-gray-500 font-medium">Rounds</div>
                             </div>
                           </div>
-                        </div>
 
-                        {selectedPreset?.name === preset.name && (
-                          <div className="absolute top-4 right-6">
-                            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 bg-green-500 rounded-full" />
+                          {/* Benefits */}
+                          <div className="space-y-2">
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Benefits</div>
+                            <div className="flex flex-wrap gap-1">
+                              {preset.benefits.map((benefit, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg font-medium">
+                                  {benefit}
+                                </span>
+                              ))}
                             </div>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Content */}
-                      <div className="p-6 space-y-4">
-                        <p className="text-gray-600 text-sm leading-relaxed">{preset.description}</p>
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="text-center p-3 bg-gray-50 rounded-2xl">
-                            <div className="text-2xl font-bold text-gray-900">{formatTime(preset.workTime)}</div>
-                            <div className="text-xs text-gray-500 font-medium">Work</div>
-                          </div>
-                          <div className="text-center p-3 bg-gray-50 rounded-2xl">
-                            <div className="text-2xl font-bold text-gray-900">{formatTime(preset.restTime)}</div>
-                            <div className="text-xs text-gray-500 font-medium">Rest</div>
-                          </div>
-                          <div className="text-center p-3 bg-gray-50 rounded-2xl">
-                            <div className="text-2xl font-bold text-gray-900">{preset.rounds}</div>
-                            <div className="text-xs text-gray-500 font-medium">Rounds</div>
+                          {/* Duration */}
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <span className="text-sm font-medium text-gray-600">Total Duration</span>
+                            <span className="text-lg font-bold text-gray-900">{formatTime(getTotalDuration(preset))}</span>
                           </div>
                         </div>
-
-                        {/* Benefits */}
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Benefits</div>
-                          <div className="flex flex-wrap gap-1">
-                            {preset.benefits.map((benefit, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg font-medium">
-                                {benefit}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Duration */}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                          <span className="text-sm font-medium text-gray-600">Total Duration</span>
-                          <span className="text-lg font-bold text-gray-900">{formatTime(getTotalDuration(preset))}</span>
-                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        ) : (
-          /* Custom Timer Creator */
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-gray-900 to-gray-700 p-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                    <Clock className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Custom Interval Timer</h2>
-                    <p className="text-white/80">Design your perfect workout protocol</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="p-8 space-y-8">
-                <div className="grid gap-8 md:grid-cols-3">
-                  {/* Work Time */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
-                        <Fire className="h-4 w-4 text-green-600" />
-                      </div>
-                      <span className="font-semibold text-gray-900">Work Time</span>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-4">
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-mono font-bold text-gray-900">
-                          {formatTime(customInterval.workTime)}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => adjustTime('workTime', -15)}
-                          className="flex-1 rounded-xl"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => adjustTime('workTime', 15)}
-                          className="flex-1 rounded-xl"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rest Time */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Heart className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <span className="font-semibold text-gray-900">Rest Time</span>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-4">
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-mono font-bold text-gray-900">
-                          {formatTime(customInterval.restTime)}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => adjustTime('restTime', -15)}
-                          className="flex-1 rounded-xl"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => adjustTime('restTime', 15)}
-                          className="flex-1 rounded-xl"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rounds */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center">
-                        <TrendUp className="h-4 w-4 text-purple-600" />
-                      </div>
-                      <span className="font-semibold text-gray-900">Rounds</span>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-4">
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-mono font-bold text-gray-900">
-                          {customInterval.rounds}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => adjustRounds(-1)}
-                          className="flex-1 rounded-xl"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => adjustRounds(1)}
-                          className="flex-1 rounded-xl"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Summary */}
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6">
-                  <div className="text-center space-y-2">
-                    <div className="text-2xl font-bold text-gray-900">
-                      Total Duration: {formatTime(getTotalDuration(customInterval))}
-                    </div>
-                    <div className="text-gray-600">
-                      {customInterval.rounds} rounds • {formatTime(customInterval.workTime)} work • {formatTime(customInterval.restTime)} rest
-                    </div>
-                  </div>
-                </div>
-
-                {/* Start Button */}
-                <Button
-                  onClick={() => setSelectedPreset(customInterval)}
-                  className="w-full h-16 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-semibold text-lg transition-all duration-200 hover:scale-[1.02]"
-                >
-                  <CaretRight className="h-6 w-6 mr-3" />
-                  Start Custom Workout
-                </Button>
+                  )
+                })}
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            /* Custom Timer Creator */
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-gray-900 to-gray-700 p-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                      <Clock className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Custom Interval Timer</h2>
+                      <p className="text-white/80">Design your perfect workout protocol</p>
+                    </div>
+                  </div>
+                </div>
 
-        {/* Active Timer */}
-        {selectedPreset && (
-          <div className="max-w-4xl mx-auto">
-            <ImmersiveTimerDisplay interval={selectedPreset} onClose={() => setSelectedPreset(null)} />
-          </div>
-        )}
+                {/* Controls */}
+                <div className="p-8 space-y-8">
+                  <div className="grid gap-8 md:grid-cols-3">
+                    {/* Work Time */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
+                          <Fire className="h-4 w-4 text-green-600" />
+                        </div>
+                        <span className="font-semibold text-gray-900">Work Time</span>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="text-center mb-4">
+                          <div className="text-4xl font-mono font-bold text-gray-900">
+                            {formatTime(customInterval.workTime)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => adjustTime('workTime', -15)}
+                            className="flex-1 rounded-xl"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => adjustTime('workTime', 15)}
+                            className="flex-1 rounded-xl"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rest Time */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <Heart className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <span className="font-semibold text-gray-900">Rest Time</span>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="text-center mb-4">
+                          <div className="text-4xl font-mono font-bold text-gray-900">
+                            {formatTime(customInterval.restTime)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => adjustTime('restTime', -15)}
+                            className="flex-1 rounded-xl"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => adjustTime('restTime', 15)}
+                            className="flex-1 rounded-xl"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rounds */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center">
+                          <TrendUp className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <span className="font-semibold text-gray-900">Rounds</span>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="text-center mb-4">
+                          <div className="text-4xl font-mono font-bold text-gray-900">
+                            {customInterval.rounds}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => adjustRounds(-1)}
+                            className="flex-1 rounded-xl"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => adjustRounds(1)}
+                            className="flex-1 rounded-xl"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6">
+                    <div className="text-center space-y-2">
+                      <div className="text-2xl font-bold text-gray-900">
+                        Total Duration: {formatTime(getTotalDuration(customInterval))}
+                      </div>
+                      <div className="text-gray-600">
+                        {customInterval.rounds} rounds • {formatTime(customInterval.workTime)} work • {formatTime(customInterval.restTime)} rest
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Start Button */}
+                  <Button
+                    onClick={() => setSelectedPreset(customInterval)}
+                    className="w-full h-16 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-semibold text-lg transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    <CaretRight className="h-6 w-6 mr-3" />
+                    Start Custom Workout
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Timer */}
+          {selectedPreset && (
+            <div className="max-w-4xl mx-auto mt-8">
+              <ImmersiveTimerDisplay interval={selectedPreset} onClose={() => setSelectedPreset(null)} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -837,3 +846,4 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
     </div>
   )
 }
+

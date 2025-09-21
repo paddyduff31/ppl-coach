@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
 import {
   Check,
   Trash,
@@ -11,10 +10,7 @@ import {
   Barbell,
   Pulse,
   Plus,
-  ArrowRight,
-  Play,
   TrendUp,
-  Lightning,
   X,
   MagnifyingGlass,
   Shuffle
@@ -35,9 +31,10 @@ interface SetInput {
   movementId: string
   weightKg: string
   reps: string
-  rpe: string
-  tempo: string
-  notes: string
+}
+
+interface ExerciseNotes {
+  [movementId: string]: string
 }
 
 const DAY_TYPE_NAMES = {
@@ -50,12 +47,6 @@ const DAY_TYPE_COLORS = {
   1: 'from-blue-500/20 to-blue-600/20',
   2: 'from-green-500/20 to-green-600/20',
   3: 'from-purple-500/20 to-purple-600/20'
-} as const
-
-const DAY_TYPE_BORDERS = {
-  1: 'border-blue-200',
-  2: 'border-green-200',
-  3: 'border-purple-200'
 } as const
 
 export default function LogSession() {
@@ -75,11 +66,11 @@ export default function LogSession() {
   // All useState hooks must be called consistently
   const [sessionActive, setSessionActive] = useState(true)
   const [setInputs, setSetInputs] = useState<Record<string, SetInput>>({})
+  const [exerciseNotes, setExerciseNotes] = useState<ExerciseNotes>({})
   const [showExerciseSearch, setShowExerciseSearch] = useState(false)
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('')
   const [recommendedMovements, setRecommendedMovements] = useState<Movement[]>([])
   const [hasLoadedRecommendations, setHasLoadedRecommendations] = useState(false)
-  const [focusedExercise, setFocusedExercise] = useState<string | null>(null)
 
   // Keyboard shortcuts for this page
   useKeyboardShortcuts([
@@ -90,23 +81,11 @@ export default function LogSession() {
       description: 'Add exercise'
     },
     {
-      key: 'f',
-      metaKey: true,
-      action: () => {
-        const firstMovement = movementsInSession[0]
-        if (firstMovement) {
-          setFocusedExercise(focusedExercise === firstMovement.id ? null : firstMovement.id)
-        }
-      },
-      description: 'Focus first exercise'
-    },
-    {
       key: 'Escape',
       action: () => {
         setShowExerciseSearch(false)
-        setFocusedExercise(null)
       },
-      description: 'Close modals/unfocus'
+      description: 'Close modals'
     }
   ])
 
@@ -129,15 +108,28 @@ export default function LogSession() {
     const sessionHasSets = session.data.setLogs.length > 0
 
     if (sessionHasSets) {
-      // Show movements from actual sets
-      return Object.keys(setsByMovement)
+      // Show movements from actual sets AND movements that have been added to session
+      const movementsWithSets = Object.keys(setsByMovement)
         .map(id => movements?.find((m: any) => m.id === id))
         .filter(Boolean) as Movement[]
+      
+      // Also include movements that have input forms but no sets yet
+      const movementsWithInputs = Object.keys(setInputs)
+        .map(id => movements?.find((m: any) => m.id === id))
+        .filter(Boolean) as Movement[]
+      
+      // Combine and deduplicate
+      const allMovements = [...movementsWithSets, ...movementsWithInputs]
+      const uniqueMovements = allMovements.filter((movement, index, self) => 
+        index === self.findIndex(m => m.id === movement.id)
+      )
+      
+      return uniqueMovements
     } else {
       // Show recommended movements for empty sessions
       return recommendedMovements
     }
-  }, [setsByMovement, movements, recommendedMovements, session?.data?.setLogs])
+  }, [setsByMovement, movements, recommendedMovements, session?.data?.setLogs, setInputs])
 
   const totalVolume = useMemo(() => {
     if (!session?.data) return 0
@@ -193,9 +185,6 @@ export default function LogSession() {
             movementId: movement.id,
             weightKg: '',
             reps: '',
-            rpe: '',
-            tempo: '',
-            notes: ''
           }
         })
         setSetInputs(prePopulatedInputs)
@@ -256,9 +245,7 @@ export default function LogSession() {
       setIndex,
       weightKg: parseFloat(input.weightKg),
       reps: parseInt(input.reps),
-      rpe: input.rpe ? parseFloat(input.rpe) : undefined,
-      tempo: input.tempo || undefined,
-      notes: input.notes || undefined
+      notes: exerciseNotes[movementId] || undefined
     }
 
     try {
@@ -275,16 +262,13 @@ export default function LogSession() {
           `${setData.weightKg}kg × ${setData.reps} reps`)
       }
 
-      // Clear input for this movement but keep weight for next set
+      // Clear reps but keep weight for next set
       setSetInputs(prev => ({
         ...prev,
         [movementId]: {
           movementId,
           weightKg: input.weightKg, // Keep weight for next set
           reps: '', // Clear reps for next set
-          rpe: '',
-          tempo: input.tempo, // Keep tempo
-          notes: ''
         }
       }))
     } catch (error) {
@@ -332,10 +316,7 @@ export default function LogSession() {
       [movement.id]: {
         movementId: movement.id,
         weightKg: '',
-        reps: '',
-        rpe: '',
-        tempo: '',
-        notes: ''
+        reps: ''
       }
     }))
     setShowExerciseSearch(false)
@@ -360,10 +341,7 @@ export default function LogSession() {
         prePopulatedInputs[movement.id] = {
           movementId: movement.id,
           weightKg: '',
-          reps: '',
-          rpe: '',
-          tempo: '',
-          notes: ''
+          reps: ''
         }
       })
       setSetInputs(prePopulatedInputs)
@@ -526,27 +504,18 @@ export default function LogSession() {
                   const input = setInputs[movement.id] || {
                     movementId: movement.id,
                     weightKg: '',
-                    reps: '',
-                    rpe: '',
-                    tempo: '',
-                    notes: ''
+                    reps: ''
                   }
-                  const isFocused = focusedExercise === movement.id
 
                   return (
                     <div
                       key={movement.id}
-                      className={cn(
-                        "bg-white rounded-3xl p-8 border transition-all duration-300",
-                        isFocused
-                          ? "border-blue-300 shadow-lg shadow-blue-100/50 scale-[1.01]"
-                          : "border-gray-200/50 hover:border-gray-300/50"
-                      )}
+                      className="bg-white rounded-3xl p-8 border border-gray-200/50 hover:border-gray-300/50 transition-all duration-300"
                     >
-                      <div className="flex items-center justify-between mb-8">
-                        <div>
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex-1">
                           <h3 className="text-2xl font-semibold text-gray-900 mb-2">{movement.name}</h3>
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-4 mb-4">
                             <span className="text-gray-600">{movement.muscleGroups?.join(', ')}</span>
                             {movement.isCompound && (
                               <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium">
@@ -554,26 +523,25 @@ export default function LogSession() {
                               </span>
                             )}
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            onClick={() => setFocusedExercise(isFocused ? null : movement.id)}
-                            className={cn(
-                              "rounded-xl px-4 py-2 font-medium transition-all duration-200",
-                              isFocused
-                                ? "bg-blue-100 hover:bg-blue-200 text-blue-700"
-                                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                            )}
-                          >
-                            <Target className="h-4 w-4 mr-2" />
-                            {isFocused ? 'Unfocus' : 'Focus'}
-                          </Button>
+                          
+                          {/* Exercise Notes */}
+                          <div className="mb-6">
+                            <Input
+                              placeholder="Exercise notes (form cues, setup, etc.)"
+                              value={exerciseNotes[movement.id] || ''}
+                              onChange={(e) => setExerciseNotes(prev => ({
+                                ...prev,
+                                [movement.id]: e.target.value
+                              }))}
+                              className="h-10 text-sm bg-gray-50 border-gray-200 rounded-lg text-gray-700 placeholder-gray-500"
+                            />
+                          </div>
                         </div>
                       </div>
 
                       {/* Previous sets */}
                       {sets.length > 0 && (
-                        <div className="mb-8">
+                        <div className="mb-6">
                           <h4 className="text-lg font-semibold text-gray-900 mb-4">Sets Completed</h4>
                           <div className="space-y-3">
                             {sets.map((set: any, index) => (
@@ -587,8 +555,6 @@ export default function LogSession() {
                                   </span>
                                   <div className="flex items-center gap-6 text-base">
                                     <span className="font-semibold text-gray-900">{set.weightKg}kg × {set.reps}</span>
-                                    {set.rpe && <span className="text-gray-600">RPE {set.rpe}</span>}
-                                    {set.tempo && <span className="text-gray-600">{set.tempo}</span>}
                                     {set.notes && <span className="text-gray-600 italic">"{set.notes}"</span>}
                                   </div>
                                 </div>
@@ -605,13 +571,10 @@ export default function LogSession() {
                         </div>
                       )}
 
-                      {/* Smart Set Input */}
+                      {/* Simplified Set Input */}
                       <SmartSetInput
                         weightKg={input.weightKg}
                         reps={input.reps}
-                        rpe={input.rpe}
-                        tempo={input.tempo}
-                        notes={input.notes}
                         onChange={(field, value) => updateSetInput(movement.id, field as keyof SetInput, value)}
                         onSubmit={() => logSet(movement.id)}
                         isSubmitting={logSetMutation.isPending}
