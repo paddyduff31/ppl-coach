@@ -315,46 +315,46 @@ export default function LogSession() {
   const dayType = session.data.dayType as keyof typeof DAY_TYPE_NAMES
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <div className="max-w-7xl mx-auto pt-8 pb-8 px-6">
-
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
+        <div className="pt-8 pb-8 px-8 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className={cn(
-                  "w-4 h-4 rounded-full",
-                  `bg-gradient-to-r ${DAY_TYPE_COLORS[dayType].replace('from-', 'from-').replace('to-', 'to-').replace('/20', '')}`
+                  "w-3 h-3 rounded-full",
+                  `bg-gradient-to-r ${DAY_TYPE_COLORS[dayType].replace('/20', '')}`
                 )} />
-                <h1 className="text-3xl font-bold tracking-tight">
+                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
                   {DAY_TYPE_NAMES[dayType]} Day Session
-                </h1>
+                </span>
               </div>
-              <p className="text-muted-foreground">
+              <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2">
+                Active Workout
+              </h1>
+              <p className="text-lg text-gray-600">
                 {new Date(session.data.date).toLocaleDateString('en-US', {
                   weekday: 'long',
-                  year: 'numeric',
                   month: 'long',
-                  day: 'numeric'
+                  day: 'numeric',
+                  year: 'numeric'
                 })}
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <SessionTimer isActive={sessionActive} onToggle={() => setSessionActive(!sessionActive)} />
               <Button
                 onClick={reshuffleExercises}
-                variant="outline"
-                className="btn-hover"
                 disabled={shuffleMovementsMutation.isPending}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
               >
                 <Shuffle className="h-4 w-4 mr-2" />
                 {shuffleMovementsMutation.isPending ? 'Shuffling...' : 'Reshuffle'}
               </Button>
               <Button
                 onClick={() => navigate({ to: '/' })}
-                variant="outline"
-                className="btn-hover"
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200"
               >
                 <Check className="h-4 w-4 mr-2" />
                 Complete Session
@@ -363,42 +363,50 @@ export default function LogSession() {
           </div>
 
           {/* Stats Bar */}
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="glass rounded-xl p-4 text-center">
-              <Target className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-              <div className="text-lg font-bold">{movementsInSession.length}</div>
-              <div className="text-xs text-muted-foreground">Exercises</div>
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Target className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="text-2xl font-semibold text-gray-900 mb-1">{movementsInSession.length}</div>
+              <div className="text-sm text-gray-500">Exercises</div>
             </div>
-            <div className="glass rounded-xl p-4 text-center">
-              <Barbell className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-              <div className="text-lg font-bold">{session.data.setLogs.length}</div>
-              <div className="text-xs text-muted-foreground">Sets Logged</div>
+            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Barbell className="h-5 w-5 text-orange-600" />
+              </div>
+              <div className="text-2xl font-semibold text-gray-900 mb-1">{session.data.setLogs.length}</div>
+              <div className="text-sm text-gray-500">Sets Logged</div>
             </div>
-            <div className="glass rounded-xl p-4 text-center">
-              <TrendUp className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-              <div className="text-lg font-bold">{Math.round(totalVolume).toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground">Volume (kg)</div>
+            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <TrendUp className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="text-2xl font-semibold text-gray-900 mb-1">{Math.round(totalVolume).toLocaleString()}</div>
+              <div className="text-sm text-gray-500">Volume (kg)</div>
             </div>
-            <div className="glass rounded-xl p-4 text-center">
-              <Pulse className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-              <div className="text-lg font-bold">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</div>
-              <div className="text-xs text-muted-foreground">Avg RPE</div>
+            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200/50">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Pulse className="h-5 w-5 text-purple-600" />
+              </div>
+              <div className="text-2xl font-semibold text-gray-900 mb-1">{averageRpe ? averageRpe.toFixed(1) : 'N/A'}</div>
+              <div className="text-sm text-gray-500">Avg RPE</div>
             </div>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Main workout area */}
-          <div className="lg:col-span-3 space-y-6">
+        <div className="px-8 py-8">
+          <div className="grid lg:grid-cols-4 gap-8">
+            {/* Main workout area */}
+            <div className="lg:col-span-3 space-y-6">
 
-            {/* Add Exercise Button */}
-            <div className="glass rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Exercises</h2>
+            {/* Add Exercise Section */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-200/50">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">Exercises</h2>
                 <Button
                   onClick={() => setShowExerciseSearch(!showExerciseSearch)}
-                  className="btn-hover"
-                  size="sm"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Exercise
@@ -407,37 +415,38 @@ export default function LogSession() {
 
               {/* Exercise Search */}
               {showExerciseSearch && (
-                <div className="mb-6 p-4 border rounded-lg bg-muted/30 animate-fade-in">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MagnifyingGlass className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search exercises..."
-                      value={exerciseSearchQuery}
-                      onChange={(e) => setExerciseSearchQuery(e.target.value)}
-                      className="flex-1"
-                    />
+                <div className="mb-6 p-6 border border-gray-200 rounded-2xl bg-gray-50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="relative flex-1">
+                      <MagnifyingGlass className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                      <Input
+                        placeholder="Search exercises..."
+                        value={exerciseSearchQuery}
+                        onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                        className="pl-10 bg-white border-gray-200 rounded-xl h-12 text-base"
+                      />
+                    </div>
                     <Button
-                      variant="ghost"
-                      size="sm"
                       onClick={() => setShowExerciseSearch(false)}
+                      className="bg-white hover:bg-gray-100 text-gray-600 rounded-xl px-3 py-3"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-5 w-5" />
                     </Button>
                   </div>
-                  <div className="grid gap-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
                     {filteredMovements.slice(0, 10).map((movement) => (
                       <div
                         key={movement.id}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer transition-all duration-200"
                         onClick={() => addExerciseToSession(movement)}
                       >
                         <div>
-                          <div className="font-medium">{movement.name}</div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="font-semibold text-gray-900">{movement.name}</div>
+                          <div className="text-sm text-gray-500 mt-1">
                             {movement.muscleGroups?.join(', ')}
                           </div>
                         </div>
-                        <Plus className="h-4 w-4 text-muted-foreground" />
+                        <Plus className="h-5 w-5 text-gray-400" />
                       </div>
                     ))}
                   </div>
@@ -462,29 +471,35 @@ export default function LogSession() {
                 <div
                   key={movement.id}
                   className={cn(
-                    "glass rounded-2xl p-6 transition-all duration-300",
-                    isFocused && "ring-2 ring-primary shadow-lg scale-[1.02]"
+                    "bg-white rounded-3xl p-8 border transition-all duration-300",
+                    isFocused
+                      ? "border-blue-300 shadow-lg shadow-blue-100/50 scale-[1.01]"
+                      : "border-gray-200/50 hover:border-gray-300/50"
                   )}
                 >
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between mb-8">
                     <div>
-                      <h3 className="text-xl font-semibold mb-1">{movement.name}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{movement.muscleGroups?.join(', ')}</span>
+                      <h3 className="text-2xl font-semibold text-gray-900 mb-2">{movement.name}</h3>
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-600">{movement.muscleGroups?.join(', ')}</span>
                         {movement.isCompound && (
-                          <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
+                          <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium">
                             Compound
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Button
-                        variant={isFocused ? "default" : "outline"}
-                        size="sm"
                         onClick={() => setFocusedExercise(isFocused ? null : movement.id)}
+                        className={cn(
+                          "rounded-xl px-4 py-2 font-medium transition-all duration-200",
+                          isFocused
+                            ? "bg-blue-100 hover:bg-blue-200 text-blue-700"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        )}
                       >
-                        <Target className="h-4 w-4 mr-1" />
+                        <Target className="h-4 w-4 mr-2" />
                         {isFocused ? 'Unfocus' : 'Focus'}
                       </Button>
                     </div>
@@ -492,27 +507,29 @@ export default function LogSession() {
 
                   {/* Previous sets */}
                   {sets.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="font-medium mb-3">Sets Completed</h4>
-                      <div className="space-y-2">
+                    <div className="mb-8">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Sets Completed</h4>
+                      <div className="space-y-3">
                         {sets.map((set: any, index) => (
                           <div
                             key={set.id}
-                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
+                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200/50"
                           >
-                            <div className="flex items-center gap-6 text-sm">
-                              <span className="font-medium w-8">#{index + 1}</span>
-                              <span className="font-mono">{set.weightKg}kg × {set.reps}</span>
-                              {set.rpe && <span className="text-muted-foreground">RPE {set.rpe}</span>}
-                              {set.tempo && <span className="text-muted-foreground">{set.tempo}</span>}
-                              {set.notes && <span className="text-muted-foreground italic">"{set.notes}"</span>}
+                            <div className="flex items-center gap-6">
+                              <span className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-sm font-semibold text-gray-700">
+                                {index + 1}
+                              </span>
+                              <div className="flex items-center gap-6 text-base">
+                                <span className="font-semibold text-gray-900">{set.weightKg}kg × {set.reps}</span>
+                                {set.rpe && <span className="text-gray-600">RPE {set.rpe}</span>}
+                                {set.tempo && <span className="text-gray-600">{set.tempo}</span>}
+                                {set.notes && <span className="text-gray-600 italic">"{set.notes}"</span>}
+                              </div>
                             </div>
                             <Button
-                              variant="ghost"
-                              size="sm"
                               onClick={() => deleteSet(set.id)}
                               disabled={deleteSetMutation.isPending}
-                              className="text-destructive hover:text-destructive"
+                              className="bg-red-50 hover:bg-red-100 text-red-600 rounded-xl px-3 py-2"
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
@@ -523,35 +540,37 @@ export default function LogSession() {
                   )}
 
                   {/* Add new set */}
-                  <div className="p-4 rounded-lg border border-dashed border-primary/30 bg-primary/5">
-                    <h4 className="font-medium mb-4 flex items-center gap-2">
-                      <Plus className="h-4 w-4 text-primary" />
+                  <div className="p-6 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/30">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <Plus className="h-4 w-4 text-blue-600" />
+                      </div>
                       Log Set #{sets.length + 1}
                     </h4>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">Weight (kg)</Label>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Weight (kg)</Label>
                         <Input
                           type="number"
                           placeholder="80"
                           value={input.weightKg}
                           onChange={(e) => updateSetInput(movement.id, 'weightKg', e.target.value)}
-                          className="h-9 font-mono"
+                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">Reps</Label>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Reps</Label>
                         <Input
                           type="number"
                           placeholder="8"
                           value={input.reps}
                           onChange={(e) => updateSetInput(movement.id, 'reps', e.target.value)}
-                          className="h-9 font-mono"
+                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">RPE (1-10)</Label>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">RPE (1-10)</Label>
                         <Input
                           type="number"
                           placeholder="8"
@@ -560,25 +579,25 @@ export default function LogSession() {
                           step="0.5"
                           value={input.rpe}
                           onChange={(e) => updateSetInput(movement.id, 'rpe', e.target.value)}
-                          className="h-9 font-mono"
+                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">Tempo</Label>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Tempo</Label>
                         <Input
                           placeholder="3-1-1"
                           value={input.tempo}
                           onChange={(e) => updateSetInput(movement.id, 'tempo', e.target.value)}
-                          className="h-9 font-mono"
+                          className="h-12 font-mono text-base bg-white border-gray-200 rounded-xl"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">Notes</Label>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Notes</Label>
                         <Input
                           placeholder="Good form"
                           value={input.notes}
                           onChange={(e) => updateSetInput(movement.id, 'notes', e.target.value)}
-                          className="h-9"
+                          className="h-12 text-base bg-white border-gray-200 rounded-xl"
                         />
                       </div>
                     </div>
@@ -586,10 +605,13 @@ export default function LogSession() {
                     <Button
                       onClick={() => logSet(movement.id)}
                       disabled={!input.weightKg || !input.reps || logSetMutation.isPending}
-                      className="btn-hover w-full"
+                      className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                     >
                       {logSetMutation.isPending ? (
-                        'Logging...'
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Logging...
+                        </div>
                       ) : (
                         <>
                           <Check className="h-4 w-4 mr-2" />
@@ -683,6 +705,7 @@ export default function LogSession() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

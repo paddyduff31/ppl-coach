@@ -10,11 +10,14 @@ import { ArrowLeft } from '@phosphor-icons/react'
 export default function Movements() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([])
-
-  const { data: movements = [], isLoading } = useQuery({
+    
+    const { data: movementsResponse, isLoading } = useQuery({
     queryKey: ['movements'],
-    queryFn: () => api.getMovements().then(res => res.data)
+    queryFn: () => api.getMovements()
   })
+
+  // Ensure movements is always an array
+  const movements = Array.isArray(movementsResponse?.data) ? movementsResponse.data : []
 
   const equipmentTypes = [
     { value: 'Bodyweight', label: 'Bodyweight', flag: 1 },
