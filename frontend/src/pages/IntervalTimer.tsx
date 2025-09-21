@@ -571,6 +571,7 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
   const [isActive, setIsActive] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false) // Track if workout has ever been started
   const intervalRef = useRef<NodeJS.Timeout>()
 
   const IconComponent = interval.icon
@@ -580,8 +581,7 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
       intervalRef.current = setInterval(() => {
         setCurrentTime(prev => {
           if (prev <= 1) {
-            handlePhaseComplete()
-            return 0
+            return 0 // Let the other useEffect handle phase completion
           }
           return prev - 1
         })
@@ -597,7 +597,14 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
         clearInterval(intervalRef.current)
       }
     }
-  }, [isActive, currentTime])
+  }, [isActive]) // Only depend on isActive
+
+  // Handle phase completion when currentTime reaches 0
+  useEffect(() => {
+    if (currentTime === 0 && isActive && hasStarted) {
+      handlePhaseComplete()
+    }
+  }, [currentTime, isActive, hasStarted])
 
   const handlePhaseComplete = () => {
     if (isWorking) {
@@ -625,6 +632,7 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
     setCurrentRound(1)
     setCurrentTime(interval.workTime)
     setIsComplete(false)
+    setHasStarted(true)
   }
 
   const pauseResume = () => {
@@ -637,6 +645,7 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
     setCurrentRound(1)
     setCurrentTime(0)
     setIsComplete(false)
+    setHasStarted(false)
   }
 
   const formatTime = (seconds: number) => {
@@ -692,8 +701,8 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
 
         {/* Timer Display */}
         <div className="p-12 text-center space-y-8">
-          {!isActive && !isComplete ? (
-            /* Start State */
+          {!hasStarted ? (
+            /* Start State - Only show when workout has never been started */
             <div className="space-y-8">
               <div className="space-y-4">
                 <div className="text-8xl font-mono font-bold text-gray-900">
@@ -754,7 +763,7 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
               </div>
             </div>
           ) : (
-            /* Active Timer State */
+            /* Active/Paused Timer State - Show when workout has started but not complete */
             <div className="space-y-8">
               <div className="space-y-4">
                 <div className="text-8xl font-mono font-bold text-gray-900">
@@ -762,6 +771,9 @@ function ImmersiveTimerDisplay({ interval, onClose }: ImmersiveTimerDisplayProps
                 </div>
                 <div className="text-xl text-gray-600">
                   Round {currentRound} of {interval.rounds} • {getPhaseLabel()}
+                  {!isActive && !isComplete && (
+                    <span className="text-orange-600 ml-2">• Paused</span>
+                  )}
                 </div>
               </div>
 
