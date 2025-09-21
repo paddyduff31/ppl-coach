@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using PplCoach.Application.DTOs;
 using PplCoach.Application.Services;
-using PplCoach.Domain.Enums;
 
 namespace PplCoach.Api.Endpoints;
 
@@ -23,18 +21,17 @@ public static class SessionEndpoints
         // Get specific session by ID
         group.MapGet("/{sessionId:guid}", async (Guid sessionId, ISessionService service) =>
         {
-            var session = await service.GetSessionByIdAsync(sessionId);
+            var session = await service.GetSessionAsync(sessionId);
             return session is not null ? Results.Ok(new { data = session }) : Results.NotFound();
         })
         .WithName("GetSession")
         .WithOpenApi();
 
         // Create new workout session
-        group.MapPost("", async (CreateSessionRequest request, ISessionService service) =>
+        group.MapPost("", async (CreateSessionDto request, ISessionService service) =>
         {
-            var sessionId = await service.CreateSessionAsync(request);
-            var session = await service.GetSessionByIdAsync(sessionId);
-            return Results.Created($"/api/sessions/{sessionId}", new { data = session });
+            var session = await service.CreateSessionAsync(request);
+            return Results.Created($"/api/sessions/{session.Id}", new { data = session });
         })
         .WithName("CreateSession")
         .WithOpenApi();
@@ -42,29 +39,19 @@ public static class SessionEndpoints
         // Update session
         group.MapPut("/{sessionId:guid}", async (Guid sessionId, UpdateSessionRequest request, ISessionService service) =>
         {
-            await service.UpdateSessionAsync(sessionId, request);
-            var session = await service.GetSessionByIdAsync(sessionId);
+            var session = await service.UpdateSessionAsync(sessionId, request);
             return Results.Ok(new { data = session });
         })
         .WithName("UpdateSession")
         .WithOpenApi();
 
-        // Delete session
-        group.MapDelete("/{sessionId:guid}", async (Guid sessionId, ISessionService service) =>
-        {
-            await service.DeleteSessionAsync(sessionId);
-            return Results.NoContent();
-        })
-        .WithName("DeleteSession")
-        .WithOpenApi();
-
         // Log a set in a session
-        group.MapPost("/{sessionId:guid}/sets", async (Guid sessionId, CreateSetLogRequest request, ISessionService service) =>
+        group.MapPost("/{sessionId:guid}/sets", async (Guid sessionId, CreateSetLogDto request, ISessionService service) =>
         {
             request.SessionId = sessionId;
-            var setId = await service.LogSetAsync(request);
-            var session = await service.GetSessionByIdAsync(sessionId);
-            return Results.Created($"/api/sessions/{sessionId}/sets/{setId}", new { data = session });
+            var setLog = await service.LogSetAsync(request);
+            var session = await service.GetSessionAsync(sessionId);
+            return Results.Created($"/api/sessions/{sessionId}/sets/{setLog.Id}", new { data = session });
         })
         .WithName("LogSet")
         .WithOpenApi();
@@ -73,20 +60,10 @@ public static class SessionEndpoints
         group.MapDelete("/{sessionId:guid}/sets/{setId:guid}", async (Guid sessionId, Guid setId, ISessionService service) =>
         {
             await service.DeleteSetAsync(setId);
-            var session = await service.GetSessionByIdAsync(sessionId);
+            var session = await service.GetSessionAsync(sessionId);
             return Results.Ok(new { data = session });
         })
         .WithName("DeleteSet")
-        .WithOpenApi();
-
-        // Complete a session
-        group.MapPost("/{sessionId:guid}/complete", async (Guid sessionId, ISessionService service) =>
-        {
-            await service.CompleteSessionAsync(sessionId);
-            var session = await service.GetSessionByIdAsync(sessionId);
-            return Results.Ok(new { data = session });
-        })
-        .WithName("CompleteSession")
         .WithOpenApi();
 
         return app;

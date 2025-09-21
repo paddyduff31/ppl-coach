@@ -1,6 +1,7 @@
 using PplCoach.Application.DTOs;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Enums;
+using PplCoach.Application.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace PplCoach.Application.Services;

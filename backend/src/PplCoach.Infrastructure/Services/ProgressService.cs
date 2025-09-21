@@ -1,30 +1,16 @@
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using PplCoach.Application.DTOs;
 using PplCoach.Application.Services;
 using PplCoach.Application.Utils;
-using PplCoach.Domain.Enums;
 using PplCoach.Infrastructure.Data;
-using PplCoach.Infrastructure.Repositories;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class ProgressService : IProgressService
+public class ProgressService(PplCoachDbContext context) : IProgressService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
-    private readonly PplCoachDbContext _context;
-
-    public ProgressService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
-    {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-        _context = context;
-    }
-
     public async Task<List<PersonalRecordDto>> GetPersonalRecordsAsync(Guid userId)
     {
-        var records = await _context.SetLogs
+        var records = await context.SetLogs
             .Include(sl => sl.Session)
             .Include(sl => sl.Movement)
             .Where(sl => sl.Session.UserId == userId)
@@ -52,7 +38,7 @@ public class ProgressService : IProgressService
 
     public async Task<List<MuscleGroupProgressDto>> GetMuscleGroupProgressAsync(Guid userId, DateOnly startDate, DateOnly endDate)
     {
-        var setLogs = await _context.SetLogs
+        var setLogs = await context.SetLogs
             .Include(sl => sl.Session)
             .Include(sl => sl.Movement)
             .Where(sl => sl.Session.UserId == userId &&

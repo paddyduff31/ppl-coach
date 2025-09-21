@@ -13,12 +13,11 @@ public interface IRepository<T> where T : class
     IQueryable<T> GetQueryable();
 }
 
-public interface IUnitOfWork
+public interface IUnitOfWork : IDisposable
 {
     IRepository<WorkoutSession> WorkoutSessions { get; }
     IRepository<SetLog> SetLogs { get; }
     IRepository<Movement> Movements { get; }
     
     Task<int> SaveChangesAsync();
-    void Dispose();
 }
