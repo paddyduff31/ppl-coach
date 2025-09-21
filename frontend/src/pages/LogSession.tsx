@@ -63,14 +63,32 @@ export default function LogSession() {
   const { data: allSessions = [] } = useUserSessions()
   const { feedback, showSuccess, hideSuccess } = useSuccessFeedback()
 
+  // Determine if this session should have an active timer
+  const isCurrentSession = useMemo(() => {
+    if (!session?.data) return false
+    
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+    const sessionDate = session.data.date
+    
+    // Session is current if it's today and not completed
+    return sessionDate === today && !session.data.isCompleted
+  }, [session?.data])
+
   // All useState hooks must be called consistently
-  const [sessionActive, setSessionActive] = useState(true)
+  const [sessionActive, setSessionActive] = useState(false) // Start as false, will be set based on session data
   const [setInputs, setSetInputs] = useState<Record<string, SetInput>>({})
   const [exerciseNotes, setExerciseNotes] = useState<ExerciseNotes>({})
   const [showExerciseSearch, setShowExerciseSearch] = useState(false)
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('')
   const [recommendedMovements, setRecommendedMovements] = useState<Movement[]>([])
   const [hasLoadedRecommendations, setHasLoadedRecommendations] = useState(false)
+
+  // Set initial session active state based on whether this is a current session
+  useEffect(() => {
+    if (session?.data) {
+      setSessionActive(isCurrentSession)
+    }
+  }, [isCurrentSession, session?.data])
 
   // Keyboard shortcuts for this page
   useKeyboardShortcuts([

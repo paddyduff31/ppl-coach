@@ -13,6 +13,11 @@ import Integrations from '../pages/Integrations'
 import { Navigation } from '../components/Navigation'
 import { GlobalShortcuts } from '../components/GlobalShortcuts'
 import { useGlobalShortcuts } from '../hooks/useKeyboardShortcuts'
+// Import the new awesome features
+import { SocialWorkoutHub } from '../components/features/SocialWorkoutHub'
+import { ChallengesHub } from '../components/features/ChallengesHub'
+import { AIFormCoach } from '../components/features/AIFormCoach'
+import { AIWorkoutDJ } from '../components/features/AIWorkoutDJ'
 
 const rootRoute = createRootRoute({
   component: () => {
@@ -102,6 +107,31 @@ const integrationsRoute = createRoute({
   component: Integrations,
 })
 
+// Add the new awesome feature routes
+const socialRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/social',
+  component: SocialWorkoutHub,
+})
+
+const challengesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/challenges',
+  component: ChallengesHub,
+})
+
+const formCoachRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/form-coach',
+  component: AIFormCoach,
+})
+
+const workoutDJRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/workout-dj',
+  component: AIWorkoutDJ,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   onboardingRoute,
@@ -114,6 +144,10 @@ const routeTree = rootRoute.addChildren([
   workoutHistoryRoute,
   calendarRoute,
   integrationsRoute,
+  socialRoute,
+  challengesRoute,
+  formCoachRoute,
+  workoutDJRoute,
 ])
 
 export const router = createRouter({ routeTree })

@@ -12,7 +12,13 @@ import {
   Lightning,
   CalendarCheck,
   Calendar,
-  Plugs
+  Plugs,
+  Users,
+  Trophy,
+  Eye,
+  MusicNote,
+  Brain,
+  Crown
 } from '@phosphor-icons/react'
 import { cn } from '../utils/utils'
 
@@ -136,6 +142,64 @@ export function Navigation() {
 
         {/* Quick actions */}
         <div className="flex items-center space-x-3">
+          {/* NEW AWESOME FEATURES - Premium Feature Bar */}
+          <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+            <Crown className="h-4 w-4 text-purple-600" />
+            <span className="text-sm font-medium text-purple-700">Premium Features:</span>
+            
+            {/* AI Form Coach */}
+            <Link to="/form-coach" className="group relative">
+              <div className={cn(
+                "flex items-center space-x-1 px-2 py-1 rounded-md transition-all duration-200",
+                location.pathname === '/form-coach' 
+                  ? "bg-purple-500 text-white" 
+                  : "hover:bg-purple-100 text-purple-600"
+              )}>
+                <Eye className="h-3 w-3" />
+                <span className="text-xs font-medium">AI Form Coach</span>
+              </div>
+            </Link>
+            
+            {/* Social Hub */}
+            <Link to="/social" className="group relative">
+              <div className={cn(
+                "flex items-center space-x-1 px-2 py-1 rounded-md transition-all duration-200",
+                location.pathname === '/social' 
+                  ? "bg-blue-500 text-white" 
+                  : "hover:bg-blue-100 text-blue-600"
+              )}>
+                <Users className="h-3 w-3" />
+                <span className="text-xs font-medium">Social Hub</span>
+              </div>
+            </Link>
+            
+            {/* Challenges */}
+            <Link to="/challenges" className="group relative">
+              <div className={cn(
+                "flex items-center space-x-1 px-2 py-1 rounded-md transition-all duration-200",
+                location.pathname === '/challenges' 
+                  ? "bg-yellow-500 text-white" 
+                  : "hover:bg-yellow-100 text-yellow-600"
+              )}>
+                <Trophy className="h-3 w-3" />
+                <span className="text-xs font-medium">Challenges</span>
+              </div>
+            </Link>
+            
+            {/* AI DJ */}
+            <Link to="/workout-dj" className="group relative">
+              <div className={cn(
+                "flex items-center space-x-1 px-2 py-1 rounded-md transition-all duration-200",
+                location.pathname === '/workout-dj' 
+                  ? "bg-pink-500 text-white" 
+                  : "hover:bg-pink-100 text-pink-600"
+              )}>
+                <MusicNote className="h-3 w-3" />
+                <span className="text-xs font-medium">AI DJ</span>
+              </div>
+            </Link>
+          </div>
+
           {/* Intervals */}
           <Link to="/intervals" className="group">
             <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
