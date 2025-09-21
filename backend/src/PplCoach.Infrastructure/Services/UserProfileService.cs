@@ -2,7 +2,6 @@ using AutoMapper;
 using PplCoach.Application.DTOs;
 using PplCoach.Application.Services;
 using PplCoach.Domain.Entities;
-using IUnitOfWork = PplCoach.Infrastructure.Repositories.IUnitOfWork;
 
 namespace PplCoach.Infrastructure.Services;
 

@@ -4,7 +4,6 @@ using PplCoach.Application.DTOs;
 using PplCoach.Application.Services;
 using PplCoach.Domain.Entities;
 using PplCoach.Infrastructure.Data;
-using IUnitOfWork = PplCoach.Infrastructure.Repositories.IUnitOfWork;
 
 namespace PplCoach.Infrastructure.Services;
 

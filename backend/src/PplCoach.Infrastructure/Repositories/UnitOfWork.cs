@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
+using PplCoach.Application.Services;
 using PplCoach.Domain.Entities;
 using PplCoach.Infrastructure.Data;
 
@@ -11,13 +12,9 @@ public class UnitOfWork : IUnitOfWork
     private bool _disposed;
 
     private IRepository<UserProfile>? _userProfiles;
-    private IRepository<EquipmentItem>? _equipmentItems;
     private IRepository<Movement>? _movements;
-    private IRepository<WorkoutTemplate>? _workoutTemplates;
-    private IRepository<WorkoutTemplateItem>? _workoutTemplateItems;
     private IRepository<WorkoutSession>? _workoutSessions;
     private IRepository<SetLog>? _setLogs;
-    private IRepository<BodyMetric>? _bodyMetrics;
 
     public UnitOfWork(PplCoachDbContext context)
     {
@@ -27,17 +24,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<UserProfile> UserProfiles =>
         _userProfiles ??= new Repository<UserProfile>(_context);
 
-    public IRepository<EquipmentItem> EquipmentItems =>
-        _equipmentItems ??= new Repository<EquipmentItem>(_context);
-
     public IRepository<Movement> Movements =>
         _movements ??= new Repository<Movement>(_context);
-
-    public IRepository<WorkoutTemplate> WorkoutTemplates =>
-        _workoutTemplates ??= new Repository<WorkoutTemplate>(_context);
-
-    public IRepository<WorkoutTemplateItem> WorkoutTemplateItems =>
-        _workoutTemplateItems ??= new Repository<WorkoutTemplateItem>(_context);
 
     public IRepository<WorkoutSession> WorkoutSessions =>
         _workoutSessions ??= new Repository<WorkoutSession>(_context);
@@ -45,8 +33,6 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<SetLog> SetLogs =>
         _setLogs ??= new Repository<SetLog>(_context);
 
-    public IRepository<BodyMetric> BodyMetrics =>
-        _bodyMetrics ??= new Repository<BodyMetric>(_context);
 
     public async Task<int> SaveChangesAsync()
     {

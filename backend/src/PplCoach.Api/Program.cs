@@ -5,11 +5,9 @@ using PplCoach.Application.Mapping;
 using PplCoach.Application.Services;
 using PplCoach.Application.Validators;
 using PplCoach.Infrastructure.Data;
+using PplCoach.Infrastructure.Repositories;
 using PplCoach.Infrastructure.Services;
 using Serilog;
-using IUnitOfWork = PplCoach.Infrastructure.Repositories.IUnitOfWork;
-using UnitOfWork = PplCoach.Infrastructure.Repositories.UnitOfWork;
-using InfrastructureSessionService = PplCoach.Infrastructure.Services.SessionService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +34,7 @@ builder.Services.AddDbContext<PplCoachDbContext>(options =>
 // Add repositories and services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-builder.Services.AddScoped<ISessionService, InfrastructureSessionService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IMovementService, MovementService>();
 builder.Services.AddScoped<IProgressService, ProgressService>();
 

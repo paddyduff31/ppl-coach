@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using PplCoach.Application.Services;
 using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Repositories;
@@ -14,12 +15,12 @@ public class Repository<T>(PplCoachDbContext context) : IRepository<T>
         return await _dbSet.FindAsync(id);
     }
 
-    public virtual async Task<List<T>> GetAllAsync()
+    public virtual async Task<IEnumerable<T>> GetAllAsync()
     {
         return await _dbSet.ToListAsync();
     }
 
-    public virtual async Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.Where(predicate).ToListAsync();
     }
@@ -29,10 +30,9 @@ public class Repository<T>(PplCoachDbContext context) : IRepository<T>
         return await _dbSet.FirstOrDefaultAsync(predicate);
     }
 
-    public virtual async Task<T> AddAsync(T entity)
+    public virtual async Task AddAsync(T entity)
     {
-        var result = await _dbSet.AddAsync(entity);
-        return result.Entity;
+        await _dbSet.AddAsync(entity);
     }
 
     public virtual async Task<List<T>> AddRangeAsync(IEnumerable<T> entities)
@@ -54,5 +54,10 @@ public class Repository<T>(PplCoachDbContext context) : IRepository<T>
     public virtual void RemoveRange(IEnumerable<T> entities)
     {
         _dbSet.RemoveRange(entities);
+    }
+
+    public virtual IQueryable<T> GetQueryable()
+    {
+        return _dbSet;
     }
 }
