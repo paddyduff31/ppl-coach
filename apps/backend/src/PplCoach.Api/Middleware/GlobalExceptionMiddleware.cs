@@ -23,7 +23,7 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
     {
         context.Response.ContentType = "application/json";
 
-        var response = new
+        object response = new
         {
             Message = "An error occurred",
             Details = exception.Message,

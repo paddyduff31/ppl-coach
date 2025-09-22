@@ -31,7 +31,7 @@ class HealthCheckService {
 
   private listeners: Array<(status: SystemStatus) => void> = [];
   private checkInterval: NodeJS.Timeout | null = null;
-  private readonly HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
+  private readonly HEALTH_CHECK_INTERVAL = 120000; // 2 minutes
   private readonly MAX_CONSECUTIVE_FAILURES = 3;
 
   constructor() {

@@ -1,16 +1,32 @@
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
+// Browser-safe environment variable access
+const getEnvVar = (key: string, fallback: string = '') => {
+  // Check for Vite environment variables (browser)
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[key] || fallback;
+  }
+
+  // Check for process.env (Node.js/React Native)
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || fallback;
+  }
+
+  return fallback;
+};
+
 // Environment-aware API configuration
 const getAPIConfig = () => {
+
   // Get API URL with fallback chain
   const baseURL =
-    process.env.REACT_NATIVE_API_URL ||
-    process.env.VITE_API_URL ||
-    process.env.API_URL ||
+    getEnvVar('REACT_NATIVE_API_URL') ||
+    getEnvVar('VITE_API_URL') ||
+    getEnvVar('API_URL') ||
     'http://localhost:5179'; // Match your backend port
 
-  const timeout = parseInt(process.env.API_TIMEOUT || '30000', 10);
-  const retryCount = parseInt(process.env.API_RETRY_COUNT || '3', 10);
+  const timeout = parseInt(getEnvVar('API_TIMEOUT', '30000'), 10);
+  const retryCount = parseInt(getEnvVar('API_RETRY_COUNT', '3'), 10);
 
   return { baseURL, timeout, retryCount };
 };
@@ -49,7 +65,8 @@ axiosInstance.interceptors.request.use(
     config.headers['X-Correlation-ID'] = generateCorrelationId();
 
     // Log request in development
-    if (process.env.NODE_ENV === 'development') {
+    const isDevelopment = getEnvVar('NODE_ENV') === 'development' || getEnvVar('VITE_NODE_ENV') === 'development';
+    if (isDevelopment) {
       console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
         data: config.data,
         params: config.params,
@@ -90,7 +107,8 @@ axiosInstance.interceptors.response.use(
       const correlationId = error.response.headers['x-correlation-id'];
 
       // Log error in development
-      if (process.env.NODE_ENV === 'development') {
+      const isDevelopment = getEnvVar('NODE_ENV') === 'development' || getEnvVar('VITE_NODE_ENV') === 'development';
+      if (isDevelopment) {
         console.error(`❌ API Error: ${status} ${config.url}`, {
           correlationId,
           data: error.response.data,
@@ -162,7 +180,8 @@ async function retryRequest(config: AxiosRequestConfig & { metadata?: { retryCou
   // Increment retry count
   config.metadata = { ...config.metadata, retryCount: currentRetryCount + 1 };
 
-  if (process.env.NODE_ENV === 'development') {
+  const isDevelopment = getEnvVar('NODE_ENV') === 'development' || getEnvVar('VITE_NODE_ENV') === 'development';
+  if (isDevelopment) {
     console.log(`🔄 Retrying request (attempt ${currentRetryCount + 1}/${retryCount}): ${config.url}`);
   }
 
@@ -183,7 +202,7 @@ function createEnhancedError(originalError: AxiosError, errorType: string) {
 
 // Utility functions
 function generateCorrelationId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // Helper functions for token management with cross-platform support

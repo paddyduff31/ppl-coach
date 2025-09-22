@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using PplCoach.Api.Endpoints;
 using PplCoach.Api.Middleware;
@@ -100,8 +102,8 @@ builder.Services.AddMemoryCache();
 // Add output caching
 builder.Services.AddOutputCache(options =>
 {
-    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromMinutes(10)));
-    options.AddPolicy("movements", builder => builder.Expire(TimeSpan.FromHours(1)));
+    options.AddBasePolicy(outputCachePolicyBuilder => outputCachePolicyBuilder.Expire(TimeSpan.FromMinutes(10)));
+    options.AddPolicy("movements", policyBuilder => policyBuilder.Expire(TimeSpan.FromHours(1)));
 });
 
 var app = builder.Build();
