@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="🚀 Full Stack Dev" type="CompoundRunConfigurationType">
+    <toRun name="🗄️ Database" />
+    <toRun name="🔧 Backend API" />
+    <toRun name="🔄 Generate API Client" />
+    <toRun name="🌐 Web Frontend" />
+    <method v="2" />
+  </configuration>
+</component>
+

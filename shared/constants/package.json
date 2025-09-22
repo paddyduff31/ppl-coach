@@ -1,0 +1,19 @@
+{
+  "name": "@ppl-coach/constants",
+  "version": "0.1.0",
+  "description": "Shared constants, configuration, and enums for PPL Coach",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist"
+  ]
+}
+

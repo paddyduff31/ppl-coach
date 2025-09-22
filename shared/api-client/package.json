@@ -1,0 +1,29 @@
+{
+  "name": "@ppl-coach/api-client",
+  "version": "0.1.0",
+  "description": "Shared API client generated from OpenAPI spec with React Query",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate": "orval",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.90.1",
+    "orval": "^6.29.1",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "axios": "^1.6.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "react": ">=16.8.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

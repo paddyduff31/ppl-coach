@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="📱 Mobile Stack" type="CompoundRunConfigurationType">
+    <toRun name="🗄️ Database" />
+    <toRun name="🔧 Backend API" />
+    <toRun name="🔄 Generate API Client" />
+    <toRun name="📱 Mobile App" />
+    <method v="2" />
+  </configuration>
+</component>
+
