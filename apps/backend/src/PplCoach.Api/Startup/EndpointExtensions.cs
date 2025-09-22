@@ -7,7 +7,6 @@ public static class EndpointExtensions
     public static WebApplication MapAllEndpoints(this WebApplication app)
     {
         // Map API endpoints
-        app.MapProfileEndpoints();
         app.MapSessionEndpoints();
         app.MapMovementEndpoints();
         app.MapProgressEndpoints();

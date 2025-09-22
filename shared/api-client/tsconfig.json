@@ -5,7 +5,9 @@
     "rootDir": "./src",
     "noEmit": false,
     "declaration": true,
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "moduleResolution": "bundler",
+    "types": ["vite/client", "node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.*", "**/*.spec.*"]

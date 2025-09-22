@@ -3,10 +3,10 @@ import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Badge } from '../components/ui/badge'
-import { 
-  Calendar, 
-  Barbell, 
-  Target, 
+import {
+  Calendar,
+  Barbell,
+  Target,
   Clock,
   Eye,
   ChartLine,
@@ -21,7 +21,7 @@ import { cn } from '../utils/utils'
 
 const DAY_TYPE_NAMES = {
   1: 'Push',
-  2: 'Pull', 
+  2: 'Pull',
   3: 'Legs'
 } as const
 
@@ -35,15 +35,16 @@ export default function WorkoutHistory() {
   const navigate = useNavigate()
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month')
   const [searchQuery, setSearchQuery] = useState('')
-  
-  const { data: allSessions = [], isLoading } = useUserSessions()
+
+  const { data: allSessions = [], isLoading, error } = useUserSessions()
   const sessionStats = useSessionStats(allSessions)
 
-  // Filter sessions based on period and search
-  const filteredSessions = allSessions.filter(session => {
+  // Now we have proper type safety - allSessions will ALWAYS be an array or undefined
+  // The API client ensures type safety, so no more terrible array guards needed!
+  const filteredSessions = (allSessions || []).filter(session => {
     const sessionDate = new Date(session.date)
     const now = new Date()
-    
+
     // Period filter
     let withinPeriod = true
     if (selectedPeriod === 'week') {
@@ -57,7 +58,7 @@ export default function WorkoutHistory() {
     }
 
     // Search filter
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       DAY_TYPE_NAMES[session.dayType as keyof typeof DAY_TYPE_NAMES].toLowerCase().includes(searchQuery.toLowerCase()) ||
       session.notes?.toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -66,13 +67,13 @@ export default function WorkoutHistory() {
 
   const calculateSessionStats = (session: any) => {
     const setLogs = session.setLogs || []
-    const totalVolume = setLogs.reduce((sum: number, set: any) => 
+    const totalVolume = setLogs.reduce((sum: number, set: any) =>
       sum + (set.weightKg * set.reps), 0
     )
-    const avgRpe = setLogs.length > 0 
-      ? setLogs.reduce((sum: number, set: any) => sum + (set.rpe || 0), 0) / setLogs.length 
+    const avgRpe = setLogs.length > 0
+      ? setLogs.reduce((sum: number, set: any) => sum + (set.rpe || 0), 0) / setLogs.length
       : 0
-    
+
     return {
       totalVolume: Math.round(totalVolume),
       avgRpe: avgRpe > 0 ? avgRpe.toFixed(1) : 'N/A',
@@ -87,19 +88,19 @@ export default function WorkoutHistory() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
       day: 'numeric',
-      year: 'numeric' 
+      year: 'numeric'
     })
   }
 
   const formatDateShort = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
     })
   }
 
@@ -119,7 +120,7 @@ export default function WorkoutHistory() {
               Your Training Journey
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-up">
-              {filteredSessions.length > 0 
+              {filteredSessions.length > 0
                 ? `${filteredSessions.length} sessions in the ${selectedPeriod === 'all' ? 'total' : `last ${selectedPeriod}`}`
                 : "Your workout history will appear here as you train"
               }
@@ -176,7 +177,7 @@ export default function WorkoutHistory() {
                 className="pl-10 h-11 border-gray-200 rounded-xl bg-white"
               />
             </div>
-            
+
             <div className="flex gap-2">
               {[
                 { key: 'week', label: 'This Week' },
@@ -213,7 +214,7 @@ export default function WorkoutHistory() {
               {filteredSessions.map((session) => {
                 const stats = calculateSessionStats(session)
                 const dayType = session.dayType as keyof typeof DAY_TYPE_NAMES
-                
+
                 return (
                   <div
                     key={session.id}
@@ -289,7 +290,7 @@ export default function WorkoutHistory() {
                 {searchQuery ? 'No matching workouts' : 'No workouts yet'}
               </h3>
               <p className="text-gray-500 mb-6">
-                {searchQuery 
+                {searchQuery
                   ? `No sessions match "${searchQuery}" in the selected time period`
                   : 'Start your first workout to see your training history here'
                 }
@@ -323,8 +324,8 @@ export default function WorkoutHistory() {
                 </p>
                 <Button
                   onClick={() => navigate({ to: '/progress' })}
-                  variant="outline" 
-                  size="sm" 
+                  variant="outline"
+                  size="sm"
                   className="w-full rounded-xl"
                 >
                   View Progress
@@ -343,8 +344,8 @@ export default function WorkoutHistory() {
                 </p>
                 <Button
                   onClick={() => navigate({ to: '/' })}
-                  variant="outline" 
-                  size="sm" 
+                  variant="outline"
+                  size="sm"
                   className="w-full rounded-xl"
                 >
                   Go to Dashboard

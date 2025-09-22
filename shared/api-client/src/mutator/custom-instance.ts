@@ -1,10 +1,20 @@
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
+// Extend Axios types to include metadata
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime?: number;
+      retryCount?: number;
+    };
+  }
+}
+
 // Browser-safe environment variable access
 const getEnvVar = (key: string, fallback: string = '') => {
   // Check for Vite environment variables (browser)
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env[key] || fallback;
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    return (import.meta as any).env[key] || fallback;
   }
 
   // Check for process.env (Node.js/React Native)

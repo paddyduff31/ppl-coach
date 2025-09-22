@@ -1,71 +1,146 @@
-using PplCoach.Application.DTOs;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using PplCoach.Application.Services;
+using PplCoach.Application.DTOs;
 
 namespace PplCoach.Api.Endpoints;
 
 public static class SessionEndpoints
 {
-    public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder app)
+    public static void MapSessionEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/sessions").WithTags("Sessions");
+        var group = app.MapGroup("/api/sessions")
+            .WithTags("Sessions")
+            .WithOpenApi();
 
-        // Get all sessions for a user
-        group.MapGet("/user/{userId:guid}", async (Guid userId, ISessionService service) =>
+        // GET /api/sessions/user/{userId}
+        group.MapGet("/user/{userId:guid}", async (
+            [FromRoute] Guid userId,
+            [FromQuery] DateOnly? startDate,
+            [FromQuery] DateOnly? endDate,
+            ISessionService service) =>
         {
-            var sessions = await service.GetUserSessionsAsync(userId);
-            return Results.Ok(new { data = sessions });
+            try
+            {
+                var sessions = await service.GetUserSessionsAsync(userId, startDate, endDate);
+                return Results.Ok(sessions);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to retrieve sessions",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
         })
         .WithName("GetUserSessions")
-        .WithOpenApi();
+        .WithSummary("Get user sessions")
+        .WithDescription("Retrieve all workout sessions for a specific user, optionally filtered by date range")
+        .Produces<List<WorkoutSessionDto>>(200)
+        .ProducesProblem(500);
 
-        // Get specific session by ID
-        group.MapGet("/{sessionId:guid}", async (Guid sessionId, ISessionService service) =>
+        // GET /api/sessions/user/{userId}/stats
+        group.MapGet("/user/{userId:guid}/stats", async (
+            [FromRoute] Guid userId,
+            ISessionService service) =>
         {
-            var session = await service.GetSessionAsync(sessionId);
-            return session is not null ? Results.Ok(new { data = session }) : Results.NotFound();
+            try
+            {
+                var stats = await service.GetUserSessionStatsAsync(userId);
+                return Results.Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to retrieve session stats",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
         })
-        .WithName("GetSession")
-        .WithOpenApi();
+        .WithName("GetUserSessionStats")
+        .WithSummary("Get user session statistics")
+        .WithDescription("Retrieve aggregated statistics for a user's workout sessions")
+        .Produces<object>(200) // Replace with proper DTO type
+        .ProducesProblem(500);
 
-        // Create new workout session
-        group.MapPost("", async (CreateSessionDto request, ISessionService service) =>
+        // POST /api/sessions
+        group.MapPost("/", async (
+            [FromBody] CreateSessionDto request,
+            ISessionService service) =>
         {
-            var session = await service.CreateSessionAsync(request);
-            return Results.Created($"/api/sessions/{session.Id}", new { data = session });
+            try
+            {
+                var session = await service.CreateSessionAsync(request);
+                return Results.Created($"/api/sessions/{session.Id}", session);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to create session",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
         })
         .WithName("CreateSession")
-        .WithOpenApi();
+        .WithSummary("Create a new workout session")
+        .WithDescription("Create a new workout session for a user")
+        .Produces<WorkoutSessionDto>(201)
+        .ProducesProblem(500);
 
-        // Update session
-        group.MapPut("/{sessionId:guid}", async (Guid sessionId, UpdateSessionRequest request, ISessionService service) =>
+        // PUT /api/sessions/{id}
+        group.MapPut("/{id:guid}", async (
+            [FromRoute] Guid id,
+            [FromBody] CreateSessionDto request,
+            ISessionService service) =>
         {
-            var session = await service.UpdateSessionAsync(sessionId, request);
-            return Results.Ok(new { data = session });
+            try
+            {
+                var session = await service.UpdateSessionAsync(id, request);
+                return Results.Ok(session);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to update session",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
         })
         .WithName("UpdateSession")
-        .WithOpenApi();
+        .WithSummary("Update an existing workout session")
+        .WithDescription("Update an existing workout session")
+        .Produces<WorkoutSessionDto>(200)
+        .ProducesProblem(404)
+        .ProducesProblem(500);
 
-        // Log a set in a session
-        group.MapPost("/{sessionId:guid}/sets", async (Guid sessionId, CreateSetLogDto request, ISessionService service) =>
+        // POST /api/sessions/{sessionId}/sets
+        group.MapPost("/{sessionId:guid}/sets", async (
+            [FromRoute] Guid sessionId,
+            [FromBody] CreateSetLogDto request,
+            ISessionService service) =>
         {
-            request.SessionId = sessionId;
-            var setLog = await service.LogSetAsync(request);
-            var session = await service.GetSessionAsync(sessionId);
-            return Results.Created($"/api/sessions/{sessionId}/sets/{setLog.Id}", new { data = session });
+            try
+            {
+                var setLog = await service.LogSetAsync(request);
+                return Results.Created($"/api/sessions/{sessionId}/sets/{setLog.Id}", setLog);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to log set",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
         })
         .WithName("LogSet")
-        .WithOpenApi();
-
-        // Delete a set from a session
-        group.MapDelete("/{sessionId:guid}/sets/{setId:guid}", async (Guid sessionId, Guid setId, ISessionService service) =>
-        {
-            await service.DeleteSetAsync(setId);
-            var session = await service.GetSessionAsync(sessionId);
-            return Results.Ok(new { data = session });
-        })
-        .WithName("DeleteSet")
-        .WithOpenApi();
-
-        return app;
+        .WithSummary("Log a set for a workout session")
+        .WithDescription("Add a new set log entry to an existing workout session")
+        .Produces<SetLogDto>(201)
+        .ProducesProblem(500);
     }
 }

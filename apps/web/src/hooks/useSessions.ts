@@ -1,30 +1,93 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { customInstance } from '@ppl-coach/api-client'
 import { useAuth } from './useAuth'
 import { toast } from 'sonner'
 
-// API functions - replace with your actual API client
-const fetchUserSessions = async (userId: string) => {
-  const response = await fetch(`http://localhost:5179/api/sessions/user/${userId}`)
+// Type-safe API functions using your customInstance
+const fetchUserSessions = async (userId: string, startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Failed to fetch sessions: ${response.status} ${response.statusText} - ${errorText}`)
-  }
+  const queryString = params.toString()
+  const url = `/api/sessions/user/${userId}${queryString ? `?${queryString}` : ''}`
 
-  return response.json()
+  const response = await customInstance<WorkoutSessionDto[]>({
+    url,
+    method: 'GET'
+  })
+
+  return response.data
 }
 
-const fetchSessionStats = async (userId: string) => {
-  const response = await fetch(`http://localhost:5179/api/sessions/user/${userId}/stats`)
+const fetchUserSessionStats = async (userId: string) => {
+  const response = await customInstance<SessionStats>({
+    url: `/api/sessions/user/${userId}/stats`,
+    method: 'GET'
+  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Failed to fetch session stats: ${response.status} ${response.statusText} - ${errorText}`)
-  }
-
-  return response.json()
+  return response.data
 }
 
+const createSession = async (sessionData: CreateSessionDto) => {
+  const response = await customInstance<WorkoutSessionDto>({
+    url: '/api/sessions',
+    method: 'POST',
+    data: sessionData
+  })
+
+  return response.data
+}
+
+const updateSession = async (sessionId: string, sessionData: CreateSessionDto) => {
+  const response = await customInstance<WorkoutSessionDto>({
+    url: `/api/sessions/${sessionId}`,
+    method: 'PUT',
+    data: sessionData
+  })
+
+  return response.data
+}
+
+// Proper TypeScript types
+interface WorkoutSessionDto {
+  id: string
+  userId: string
+  date: string
+  dayType: number
+  notes?: string
+  setLogs: SetLogDto[]
+}
+
+interface SetLogDto {
+  id: string
+  sessionId: string
+  movementId: string
+  setIndex: number
+  weightKg: number
+  reps: number
+  rpe?: number
+  tempo?: string
+  notes?: string
+  createdAt: string
+  movementName?: string
+}
+
+interface CreateSessionDto {
+  userId: string
+  date: string
+  dayType: number
+  notes?: string
+}
+
+interface SessionStats {
+  totalSessions: number
+  thisWeekSessions: number
+  totalVolume: number
+  workoutStreak: number
+}
+
+// Proper type-safe hooks with error handling
 export function useUserSessions() {
   const { user, isAuthenticated } = useAuth()
 
@@ -32,17 +95,16 @@ export function useUserSessions() {
     queryKey: ['sessions', user?.id],
     queryFn: () => fetchUserSessions(user!.id),
     enabled: isAuthenticated && !!user?.id,
-    retry: (failureCount, error) => {
-      // Don't retry on 401/403 (auth issues) or 404 (user not found)
-      const status = (error as any)?.response?.status
-      if (status === 401 || status === 403 || status === 404) {
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth issues
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
         return false
       }
       return failureCount < 3
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Session fetch error:', error)
-      toast.error(`Failed to load sessions: ${error.message}`)
+      toast.error(`Failed to load sessions: ${error.response?.data?.detail || error.message}`)
     }
   })
 }
@@ -52,19 +114,17 @@ export function useSessionStats() {
 
   return useQuery({
     queryKey: ['sessionStats', user?.id],
-    queryFn: () => fetchSessionStats(user!.id),
+    queryFn: () => fetchUserSessionStats(user!.id),
     enabled: isAuthenticated && !!user?.id,
-    retry: (failureCount, error) => {
-      // Don't retry on auth issues
-      const status = (error as any)?.response?.status
-      if (status === 401 || status === 403 || status === 404) {
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
         return false
       }
       return failureCount < 3
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Session stats fetch error:', error)
-      toast.error(`Failed to load session statistics: ${error.message}`)
+      toast.error(`Failed to load session statistics: ${error.response?.data?.detail || error.message}`)
     }
   })
 }
@@ -74,61 +134,34 @@ export function useCreateSession() {
   const { user } = useAuth()
 
   return useMutation({
-    mutationFn: async (sessionData: any) => {
-      const response = await fetch('http://localhost:5179/api/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sessionData),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Failed to create session: ${response.status} ${response.statusText} - ${errorText}`)
-      }
-
-      return response.json()
-    },
+    mutationFn: createSession,
     onSuccess: () => {
-      // Invalidate sessions query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['sessions', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['sessionStats', user?.id] })
       toast.success('Session created successfully!')
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Session creation error:', error)
-      toast.error(`Failed to create session: ${error.message}`)
+      toast.error(`Failed to create session: ${error.response?.data?.detail || error.message}`)
     }
   })
 }
 
 export function useUpdateSession() {
+  const queryClient = useQueryClient()
   const { user } = useAuth()
 
   return useMutation({
-    mutationFn: async ({ sessionId, sessionData }: { sessionId: string, sessionData: any }) => {
-      const response = await fetch(`http://localhost:5179/api/sessions/${sessionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sessionData),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Failed to update session: ${response.status} ${response.statusText} - ${errorText}`)
-      }
-
-      return response.json()
-    },
+    mutationFn: ({ sessionId, sessionData }: { sessionId: string, sessionData: CreateSessionDto }) =>
+      updateSession(sessionId, sessionData),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['sessionStats', user?.id] })
       toast.success('Session updated successfully!')
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Session update error:', error)
-      toast.error(`Failed to update session: ${error.message}`)
+      toast.error(`Failed to update session: ${error.response?.data?.detail || error.message}`)
     }
   })
 }

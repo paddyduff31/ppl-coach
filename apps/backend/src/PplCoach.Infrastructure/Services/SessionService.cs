@@ -1,16 +1,23 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using PplCoach.Application.DTOs;
 using PplCoach.Application.Services;
+using PplCoach.Application.DTOs;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Repositories;
-using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class SessionService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
-    : ISessionService
+public class SessionService : ISessionService
 {
+    private readonly IUnitOfWork unitOfWork;
+    private readonly IMapper mapper;
+
+    public SessionService(IUnitOfWork unitOfWork, IMapper mapper)
+    {
+        this.unitOfWork = unitOfWork;
+        this.mapper = mapper;
+    }
+
     public async Task<WorkoutSessionDto> CreateSessionAsync(CreateSessionDto dto)
     {
         var session = mapper.Map<WorkoutSession>(dto);
@@ -24,19 +31,26 @@ public class SessionService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbCo
 
     public async Task<WorkoutSessionDto?> GetSessionAsync(Guid sessionId)
     {
-        var session = await context.WorkoutSessions
-            .Include(s => s.SetLogs)
-            .ThenInclude(sl => sl.Movement)
-            .FirstOrDefaultAsync(s => s.Id == sessionId);
+        var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
+        return session == null ? null : mapper.Map<WorkoutSessionDto>(session);
+    }
 
-        return session != null ? mapper.Map<WorkoutSessionDto>(session) : null;
+    public async Task<WorkoutSessionDto> UpdateSessionAsync(Guid sessionId, CreateSessionDto request)
+    {
+        var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
+        if (session == null)
+            throw new KeyNotFoundException($"Session with ID {sessionId} not found");
+
+        mapper.Map(request, session);
+        unitOfWork.WorkoutSessions.Update(session);
+        await unitOfWork.SaveChangesAsync();
+
+        return mapper.Map<WorkoutSessionDto>(session);
     }
 
     public async Task<List<WorkoutSessionDto>> GetUserSessionsAsync(Guid userId, DateOnly? startDate = null, DateOnly? endDate = null)
     {
-        var query = context.WorkoutSessions
-            .Include(s => s.SetLogs)
-            .ThenInclude(sl => sl.Movement)
+        var query = unitOfWork.WorkoutSessions.GetQueryable()
             .Where(s => s.UserId == userId);
 
         if (startDate.HasValue)
@@ -45,8 +59,35 @@ public class SessionService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbCo
         if (endDate.HasValue)
             query = query.Where(s => s.Date <= endDate.Value);
 
-        var sessions = await query.OrderByDescending(s => s.Date).ToListAsync();
+        var sessions = await query
+            .Include(s => s.SetLogs)
+            .ThenInclude(sl => sl.Movement)
+            .ToListAsync();
+
         return mapper.Map<List<WorkoutSessionDto>>(sessions);
+    }
+
+    public async Task<object> GetUserSessionStatsAsync(Guid userId)
+    {
+        var sessions = await unitOfWork.WorkoutSessions.GetQueryable()
+            .Include(s => s.SetLogs)
+            .Where(s => s.UserId == userId)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        var oneWeekAgo = DateOnly.FromDateTime(now.AddDays(-7));
+        var thisWeekSessions = sessions.Count(s => s.Date >= oneWeekAgo);
+
+        var totalVolume = sessions.Sum(s => s.TotalVolume);
+        var workoutStreak = CalculateWorkoutStreak(sessions);
+
+        return new
+        {
+            totalSessions = sessions.Count,
+            thisWeekSessions,
+            totalVolume,
+            workoutStreak
+        };
     }
 
     public async Task<SetLogDto> LogSetAsync(CreateSetLogDto dto)
@@ -57,7 +98,8 @@ public class SessionService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbCo
         await unitOfWork.SetLogs.AddAsync(setLog);
         await unitOfWork.SaveChangesAsync();
 
-        var setLogWithMovement = await context.SetLogs
+        // Load with movement name
+        var setLogWithMovement = await unitOfWork.SetLogs.GetQueryable()
             .Include(sl => sl.Movement)
             .FirstAsync(sl => sl.Id == setLog.Id);
 
@@ -68,34 +110,38 @@ public class SessionService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbCo
     {
         var setLog = await unitOfWork.SetLogs.GetByIdAsync(setId);
         if (setLog == null)
-            throw new InvalidOperationException($"Set log with id {setId} not found");
+            throw new KeyNotFoundException($"Set log with ID {setId} not found");
 
         unitOfWork.SetLogs.Remove(setLog);
         await unitOfWork.SaveChangesAsync();
     }
 
-    public async Task<WorkoutSessionDto> UpdateSessionAsync(Guid sessionId, UpdateSessionRequest request)
+    private int CalculateWorkoutStreak(List<WorkoutSession> sessions)
     {
-        var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
-        if (session == null)
-            throw new InvalidOperationException($"Session with id {sessionId} not found");
+        if (!sessions.Any()) return 0;
 
-        if (request.Date.HasValue)
-            session.Date = request.Date.Value;
-        if (request.DayType.HasValue)
-            session.DayType = request.DayType.Value;
-        if (request.Notes != null)
-            session.Notes = request.Notes;
+        var orderedSessions = sessions
+            .OrderByDescending(s => s.Date)
+            .ToList();
 
-        unitOfWork.WorkoutSessions.Update(session);
-        await unitOfWork.SaveChangesAsync();
+        var streak = 0;
+        var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Return updated session with all related data
-        var updatedSession = await context.WorkoutSessions
-            .Include(s => s.SetLogs)
-            .ThenInclude(sl => sl.Movement)
-            .FirstAsync(s => s.Id == sessionId);
+        foreach (var session in orderedSessions)
+        {
+            var daysDiff = currentDate.DayNumber - session.Date.DayNumber;
 
-        return mapper.Map<WorkoutSessionDto>(updatedSession);
+            if (daysDiff <= 1) // Today or yesterday
+            {
+                streak++;
+                currentDate = session.Date;
+            }
+            else if (daysDiff > 2) // Gap in workouts
+            {
+                break;
+            }
+        }
+
+        return streak;
     }
 }

@@ -30,9 +30,8 @@ class HealthCheckService {
   };
 
   private listeners: Array<(status: SystemStatus) => void> = [];
-  private checkInterval: NodeJS.Timeout | null = null;
+  private checkInterval: ReturnType<typeof setInterval> | null = null;
   private readonly HEALTH_CHECK_INTERVAL = 120000; // 2 minutes
-  private readonly MAX_CONSECUTIVE_FAILURES = 3;
 
   constructor() {
     // Listen for network changes
@@ -127,7 +126,7 @@ class HealthCheckService {
       if (this.systemStatus.isOnline) {
         this.checkHealth();
       }
-    }, this.HEALTH_CHECK_INTERVAL);
+    }, this.HEALTH_CHECK_INTERVAL) as ReturnType<typeof setInterval>;
   }
 
   /**
