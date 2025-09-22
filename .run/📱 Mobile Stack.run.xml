@@ -1,10 +1,8 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="📱 Mobile Stack" type="CompoundRunConfigurationType">
-    <toRun name="🗄️ Database" />
-    <toRun name="🔧 Backend API" />
-    <toRun name="🔄 Generate API Client" />
-    <toRun name="📱 Mobile App" />
+    <toRun name="🔧 Backend API" type="DotNetProject" />
+    <toRun name="🗄️ Database" type="docker-deploy" />
+    <toRun name="📱 Mobile App" type="js.build_tools.npm" />
     <method v="2" />
   </configuration>
 </component>
-

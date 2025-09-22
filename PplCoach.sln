@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -8,7 +7,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7F8E9D0C-1A2B-3C4D-5E6F-789012345678}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
-		CLAUDE.md = CLAUDE.md
 		docker-compose.yml = docker-compose.yml
 		.gitignore = .gitignore
 		.editorconfig = .editorconfig
@@ -20,11 +18,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\e2e.yml = .github\workflows\e2e.yml
 		playwright.config.ts = playwright.config.ts
 		.prettierrc = .prettierrc
-		.eslintrc.json = .eslintrc.json
 		.vscode\settings.json = .vscode\settings.json
 		.vscode\extensions.json = .vscode\extensions.json
 		.vscode\launch.json = .vscode\launch.json
 		.vscode\tasks.json = .vscode\tasks.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AI Instructions", "AI Instructions", "{8F9E1D2C-3A4B-5C6D-7E8F-901234567890}"
+	ProjectSection(SolutionItems) = preProject
+		.ai-instructions\CLAUDE.md = .ai-instructions\CLAUDE.md
+		.ai-instructions\backend-ai-instructions.md = .ai-instructions\backend-ai-instructions.md
+		.ai-instructions\expo-doctor.md = .ai-instructions\expo-doctor.md
+		.ai-instructions\image-to-components.md = .ai-instructions\image-to-components.md
+		.ai-instructions\svg-icon.md = .ai-instructions\svg-icon.md
+		.ai-instructions\write-unit-tests.md = .ai-instructions\write-unit-tests.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PplCoach.Api", "apps\backend\src\PplCoach.Api\PplCoach.Api.csproj", "{5B335198-F1BC-4B8B-BBB9-EC472EE26C7E}"
@@ -54,6 +61,8 @@ EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "logger", "shared\logger\logger.esproj", "{6D45A579-9740-45F1-907E-FB4600B58913}"
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "constants", "shared\constants\constants.esproj", "{5577DB9A-1214-4218-89B3-92E2F09D58CA}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "config", "shared\config\config.esproj", "{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -177,6 +186,12 @@ Global
 		{5577DB9A-1214-4218-89B3-92E2F09D58CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5577DB9A-1214-4218-89B3-92E2F09D58CA}.Release|x64.ActiveCfg = Release|Any CPU
 		{5577DB9A-1214-4218-89B3-92E2F09D58CA}.Release|x86.ActiveCfg = Release|Any CPU
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}.Release|x64.ActiveCfg = Release|Any CPU
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -193,5 +208,6 @@ Global
 		{65D19B51-AF19-4B62-9B35-74496280DB5E} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 		{6D45A579-9740-45F1-907E-FB4600B58913} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 		{5577DB9A-1214-4218-89B3-92E2F09D58CA} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
+		{9F8E7D6C-5A4B-3C2D-1E0F-890123456789} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 	EndGlobalSection
 EndGlobal

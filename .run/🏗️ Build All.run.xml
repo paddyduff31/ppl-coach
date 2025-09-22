@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="🏗️ Build All" type="npm" nameIsGenerated="true">
+  <configuration default="false" name="🏗️ Build All" type="js.build_tools.npm" factoryName="npm">
     <package-json value="$PROJECT_DIR$/package.json" />
     <command value="run" />
     <scripts>
@@ -10,4 +10,3 @@
     <method v="2" />
   </configuration>
 </component>
-

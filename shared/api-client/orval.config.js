@@ -1,7 +1,7 @@
 module.exports = {
   "ppl-coach-api": {
     input: {
-      target: "http://localhost:5000/swagger/v1/swagger.json",
+      target: "http://localhost:5179/swagger/v1/swagger.json",
       validation: false,
     },
     output: {
@@ -18,8 +18,7 @@ module.exports = {
         },
         query: {
           useQuery: true,
-          useInfinite: true,
-          useInfiniteQueryParam: "nextId",
+          useInfinite: false,
           options: {
             staleTime: 10000,
             refetchOnWindowFocus: false,

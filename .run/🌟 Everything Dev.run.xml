@@ -1,11 +1,9 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="🌟 Everything Dev" type="CompoundRunConfigurationType">
-    <toRun name="🗄️ Database" />
-    <toRun name="🔧 Backend API" />
-    <toRun name="🔄 Generate API Client" />
-    <toRun name="🌐 Web Frontend" />
-    <toRun name="📱 Mobile App" />
+    <toRun name="🔧 Backend API" type="DotNetProject" />
+    <toRun name="🗄️ Database" type="docker-deploy" />
+    <toRun name="🌐 Web Frontend" type="js.build_tools.npm" />
+    <toRun name="📱 Mobile App" type="js.build_tools.npm" />
     <method v="2" />
   </configuration>
 </component>
-
