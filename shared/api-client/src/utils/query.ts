@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getQueryKey } from './pagination';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
 /**
  * Enhanced query client with optimized defaults for the PPL Coach app
@@ -9,10 +10,10 @@ export const createOptimizedQueryClient = () => {
     defaultOptions: {
       queries: {
         staleTime: 1000 * 60 * 5, // 5 minutes
-        gcTime: 1000 * 60 * 30, // 30 minutes
+        gcTime: 1000 * 60 * 60 * 24, // 24 hours (increased for better persistence)
         refetchOnWindowFocus: false,
-        refetchOnMount: true,
-        refetchOnReconnect: true,
+        refetchOnMount: 'always',
+        refetchOnReconnect: 'always',
         retry: (failureCount, error: any) => {
           // Don't retry on 4xx errors except 408, 429
           if (error?.response?.status >= 400 && error?.response?.status < 500) {
@@ -30,8 +31,32 @@ export const createOptimizedQueryClient = () => {
           }
           return failureCount < 2;
         },
+        onError: (error) => {
+          console.error('Mutation failed:', error);
+          // Could add toast notification here
+        },
       },
     },
+  });
+};
+
+/**
+ * Create persister for query cache persistence
+ */
+export const createQueryPersister = () => {
+  return createSyncStoragePersister({
+    storage: typeof window !== 'undefined' ? window.localStorage : null,
+    key: 'ppl-coach-cache',
+    serialize: JSON.stringify,
+    deserialize: (value: string) => {
+      try {
+        return JSON.parse(value);
+      } catch {
+        // If parsing fails, return null to trigger fresh fetch
+        return null;
+      }
+    },
+    throttleTime: 1000, // Throttle saves to avoid excessive writes
   });
 };
 

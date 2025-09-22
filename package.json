@@ -74,5 +74,10 @@
     "monorepo"
   ],
   "author": "PPL Coach Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@tanstack/query-persist-client-core": "^5.90.1",
+    "@tanstack/query-sync-storage-persister": "^5.90.1",
+    "zustand": "^5.0.8"
+  }
 }

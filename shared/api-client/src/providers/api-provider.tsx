@@ -1,6 +1,7 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createOptimizedQueryClient } from '../utils/query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client-core';
+import { createOptimizedQueryClient, createQueryPersister } from '../utils/query';
 
 // Conditional import for React Query DevTools (web only)
 let ReactQueryDevtools: any = null;
@@ -27,7 +28,7 @@ export function getQueryClient() {
 }
 
 /**
- * Enhanced API Provider with React Query setup
+ * Enhanced API Provider with React Query setup and persistence
  * Works for both web and mobile with environment detection
  */
 export interface APIProviderProps {
@@ -35,12 +36,15 @@ export interface APIProviderProps {
   queryClient?: QueryClient;
   /** Show React Query DevTools (defaults to dev environment detection) */
   showDevtools?: boolean;
+  /** Enable query persistence (defaults to true) */
+  enablePersistence?: boolean;
 }
 
 export function APIProvider({
   children,
   queryClient,
-  showDevtools
+  showDevtools,
+  enablePersistence = true
 }: APIProviderProps) {
   const client = queryClient || getQueryClient();
 
@@ -50,6 +54,38 @@ export function APIProvider({
     (typeof globalThis !== 'undefined' && (globalThis as any).__DEV__) // React Native development flag
   );
 
+  // Use persistence if enabled and we're in a browser environment
+  if (enablePersistence && typeof window !== 'undefined') {
+    const persister = createQueryPersister();
+
+    return (
+      <PersistQueryClientProvider
+        client={client}
+        persister={persister}
+        maxAge={1000 * 60 * 60 * 24} // 24 hours
+        onSuccess={() => {
+          // Resume paused mutations and invalidate stale queries after restoration
+          client.resumePausedMutations().then(() => {
+            client.invalidateQueries({
+              predicate: (query) => query.isStale(),
+            });
+          });
+        }}
+        onError={(error) => {
+          console.warn('Query persistence failed:', error);
+          // Continue without persistence rather than breaking the app
+        }}
+      >
+        {children}
+        {/* Only show devtools in development and for web */}
+        {isDev && ReactQueryDevtools && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
+      </PersistQueryClientProvider>
+    );
+  }
+
+  // Fallback to regular QueryClientProvider (for mobile or when persistence is disabled)
   return (
     <QueryClientProvider client={client}>
       {children}

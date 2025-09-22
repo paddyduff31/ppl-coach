@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PplCoach.Api.Endpoints;
+using PplCoach.Api.Middleware;
 using PplCoach.Application.Mapping;
 using PplCoach.Application.Services;
 using PplCoach.Application.Validators;
@@ -30,7 +31,22 @@ var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ??
     "Host=localhost;Database=ppl_dev;Username=ppl;Password=ppl_password";
 
 builder.Services.AddDbContext<PplCoachDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorCodesToAdd: null);
+        npgsqlOptions.CommandTimeout(30);
+    });
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
 
 // Add repositories and services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -59,6 +75,34 @@ builder.Services.AddCors(options =>
 // Add health checks
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
+
+// Add rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("api", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 100;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 5;
+    });
+
+    options.AddFixedWindowLimiter("auth", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 5;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+    });
+});
+
+// Add memory cache for better performance
+builder.Services.AddMemoryCache();
+
+// Add output caching
+builder.Services.AddOutputCache(options =>
+{
+    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromMinutes(10)));
+    options.AddPolicy("movements", builder => builder.Expire(TimeSpan.FromHours(1)));
+});
 
 var app = builder.Build();
 
@@ -93,6 +137,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<PerformanceMiddleware>();
+app.UseRateLimiter();
+app.UseOutputCache();
 app.UseCors();
 
 // Health checks
