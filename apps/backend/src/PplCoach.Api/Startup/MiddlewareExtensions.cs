@@ -8,11 +8,11 @@ public static class MiddlewareExtensions
     public static WebApplication ConfigureMiddleware(this WebApplication app)
     {
         app.UseSerilogRequestLogging();
+        app.UseCors(); // CORS must be early in the pipeline
         app.UseMiddleware<GlobalExceptionMiddleware>();
         app.UseMiddleware<PerformanceMiddleware>();
         app.UseRateLimiter();
         app.UseOutputCache();
-        app.UseCors();
 
         return app;
     }

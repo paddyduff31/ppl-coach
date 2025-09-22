@@ -162,8 +162,13 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(createEnhancedError(error, 'TIMEOUT'));
     }
 
-    // Handle network connection errors with retry
+    // Handle network connection errors with retry (but not CORS errors)
     if (error.code === 'ERR_NETWORK' || !error.response) {
+      // Don't retry CORS errors - they appear as network errors but retrying won't help
+      if (error.message?.includes('CORS') || error.message?.includes('Access-Control-Allow-Origin')) {
+        return Promise.reject(createEnhancedError(error, 'CORS_ERROR'));
+      }
+
       if (shouldRetry(config)) {
         return retryRequest(config);
       }
@@ -205,6 +210,7 @@ function createEnhancedError(originalError: AxiosError, errorType: string) {
     type: errorType,
     isNetworkError: !originalError.response,
     isRetryable: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'].includes(errorType),
+    isCorsError: errorType === 'CORS_ERROR',
     timestamp: new Date().toISOString(),
     correlationId: originalError.response?.headers['x-correlation-id'],
   };
