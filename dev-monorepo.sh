@@ -57,10 +57,17 @@ docker compose up -d db
 sleep 3
 
 # Install frontend dependencies if needed
-if [ ! -d "frontend/node_modules" ]; then
-    echo -e "${YELLOW}📦 Installing frontend dependencies...${NC}"
-    cd frontend && npm install && cd ..
-    echo -e "${GREEN}✅ Frontend dependencies installed${NC}"
+if [ ! -d "apps/web/node_modules" ]; then
+    echo -e "${YELLOW}📦 Installing web dependencies...${NC}"
+    cd apps/web && npm install && cd ../..
+    echo -e "${GREEN}✅ Web dependencies installed${NC}"
+fi
+
+# Install mobile dependencies if needed
+if [ ! -d "apps/mobile/node_modules" ]; then
+    echo -e "${YELLOW}📦 Installing mobile dependencies...${NC}"
+    cd apps/mobile && pnpm install && cd ../..
+    echo -e "${GREEN}✅ Mobile dependencies installed${NC}"
 fi
 
 # Create a function to cleanup processes on exit
@@ -78,27 +85,27 @@ echo -e "${GREEN}🎯 Starting all services...${NC}"
 
 # Start backend in background
 echo -e "${BLUE}🔧 Starting .NET Backend (http://localhost:5179)...${NC}"
-cd backend
+cd apps/backend
 dotnet run --project src/PplCoach.Api/PplCoach.Api.csproj &
 BACKEND_PID=$!
-cd ..
+cd ../..
 
 # Wait a moment for backend to start
 sleep 5
 
-# Start frontend in background
-echo -e "${BLUE}⚛️  Starting React Frontend (http://localhost:5173)...${NC}"
-cd frontend
+# Start web frontend in background
+echo -e "${BLUE}⚛️  Starting React Web App (http://localhost:5173)...${NC}"
+cd apps/web
 npm run dev &
 FRONTEND_PID=$!
-cd ..
+cd ../..
 
 echo -e "${GREEN}"
 echo "========================================="
 echo "🎉 PPL Coach Development Environment Ready!"
 echo "========================================="
 echo -e "${NC}"
-echo -e "${BLUE}📱 Frontend: ${NC}http://localhost:5173"
+echo -e "${BLUE}📱 Web App: ${NC}http://localhost:5173"
 echo -e "${BLUE}🔧 Backend API: ${NC}http://localhost:5179"
 echo -e "${BLUE}📚 API Swagger: ${NC}http://localhost:5179/swagger"
 echo -e "${BLUE}🐘 PostgreSQL: ${NC}localhost:5432"

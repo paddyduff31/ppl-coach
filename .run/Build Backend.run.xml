@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build Backend" type="DotNetBuildConfiguration" factoryName=".NET Build">
+    <option name="PROJECT_PATH" value="$PROJECT_DIR$/apps/backend/PplCoach.sln" />
+    <option name="BUILD_ARGUMENTS" value="" />
+    <option name="RUNTIME_ARGUMENTS" value="" />
+    <method v="2" />
+  </configuration>
+</component>

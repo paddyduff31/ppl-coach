@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ppl_password
+          POSTGRES_USER: ppl
+          POSTGRES_DB: ppl_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4.0.1
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all projects
+        run: npm run build
+
+      - name: Run backend tests
+        run: npm run test:backend
+        env:
+          DATABASE_URL: "Host=localhost;Port=5432;Database=ppl_test;Username=ppl;Password=ppl_password"
+
+      - name: Run frontend tests
+        run: npm run test:frontend
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run typecheck

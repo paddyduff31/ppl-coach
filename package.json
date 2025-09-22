@@ -5,31 +5,58 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "./dev-monorepo.sh",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && dotnet run --project src/PplCoach.Api/PplCoach.Api.csproj",
+    "dev": "turbo dev",
+    "dev:all": "./dev-monorepo.sh",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:frontend": "cd apps/web && npm run dev",
+    "dev:mobile": "cd apps/mobile && pnpm dev",
+    "dev:backend": "cd apps/backend && dotnet run --project src/PplCoach.Api/PplCoach.Api.csproj",
     "dev:db": "docker compose up -d db",
-    "install:frontend": "cd frontend && npm install",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && dotnet build",
-    "build": "npm run build:backend && npm run build:frontend",
-    "test:frontend": "cd frontend && npm run test",
-    "test:backend": "cd backend && dotnet test",
-    "test": "npm run test:backend && npm run test:frontend",
-    "lint:frontend": "cd frontend && npm run lint",
-    "clean": "cd frontend && npm run dev:clean && cd ../backend && dotnet clean",
-    "reset": "npm run clean && docker compose down -v && npm run install:frontend"
+    "build": "turbo build",
+    "build:web": "cd apps/web && npm run build",
+    "build:mobile": "cd apps/mobile && pnpm build",
+    "build:backend": "cd apps/backend && dotnet build",
+    "test": "turbo test",
+    "test:web": "cd apps/web && npm run test",
+    "test:frontend": "cd apps/web && npm run test",
+    "test:mobile": "cd apps/mobile && pnpm test",
+    "test:backend": "cd apps/backend && dotnet test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "lint": "turbo lint",
+    "lint:web": "cd apps/web && npm run lint",
+    "lint:mobile": "cd apps/mobile && pnpm lint",
+    "lint:fix": "turbo lint:fix",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "turbo clean && cd apps/backend && dotnet clean",
+    "reset": "npm run clean && docker compose down -v && npm install",
+    "setup": "npm install && npm run dev:db"
   },
   "workspaces": [
-    "frontend"
+    "apps/web",
+    "shared/*"
   ],
+  "packageManager": "npm@10.9.0",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "prettier": "^3.0.0",
+    "turbo": "^2.5.6",
+    "wait-on": "^8.0.0"
   },
   "keywords": [
     "fitness",
@@ -42,4 +69,3 @@
   "author": "PPL Coach Team",
   "license": "MIT"
 }
-
