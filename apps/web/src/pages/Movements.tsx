@@ -1,23 +1,16 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../api/endpoints'
+import { useGetAllMovements } from '@ppl-coach/api-client'
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { ArrowLeft } from '@phosphor-icons/react'
 
 export default function Movements() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([])
-    
-    const { data: movementsResponse, isLoading } = useQuery({
-    queryKey: ['movements'],
-    queryFn: () => api.getMovements()
-  })
+
+  const { data: movementsResponse, isLoading } = useGetAllMovements()
 
   // Ensure movements is always an array
-  const movements = Array.isArray(movementsResponse?.data) ? movementsResponse.data : []
+  const movements = Array.isArray(movementsResponse) ? movementsResponse : []
 
   const equipmentTypes = [
     { value: 'Bodyweight', label: 'Bodyweight', flag: 1 },
@@ -52,14 +45,14 @@ export default function Movements() {
 
   const filteredMovements = movements.filter((movement: any) => {
     const matchesSearch = movement.name.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     // Equipment filter logic
-    const matchesEquipment = selectedEquipment.length === 0 || 
+    const matchesEquipment = selectedEquipment.length === 0 ||
       selectedEquipment.some(selectedEq => {
         const equipmentFlag = equipmentTypes.find(eq => eq.value === selectedEq)?.flag || 0
         return (movement.requires & equipmentFlag) === equipmentFlag
       })
-    
+
     return matchesSearch && matchesEquipment
   })
 
@@ -160,7 +153,7 @@ export default function Movements() {
             ) : (
               <div className="col-span-full text-center py-12">
                 <div className="text-gray-500">
-                  {selectedEquipment.length > 0 
+                  {selectedEquipment.length > 0
                     ? `No exercises found for ${selectedEquipment.join(', ')} equipment${searchTerm ? ` matching "${searchTerm}"` : ''}`
                     : 'No exercises found matching your criteria'
                   }

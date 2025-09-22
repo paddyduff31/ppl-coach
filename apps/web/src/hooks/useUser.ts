@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../api/endpoints'
+import { useQueryClient } from '@tanstack/react-query'
+import { useGetProfile, useCreateProfile } from '@ppl-coach/api-client'
 
 // Check if user exists in localStorage, fallback to default user for development
 const getStoredUserId = (): string | null => {
@@ -21,29 +21,31 @@ export function useUser() {
     setStoredUserId(storedUserId)
   }
 
-  // Get user profile - only if we have a stored user ID
-  const { data: userProfile, isLoading, error } = useQuery({
-    queryKey: ['user', storedUserId],
-    queryFn: () => api.getProfile(storedUserId!),
-    retry: false,
-    enabled: !!storedUserId,
+  // Get user profile using the generated API client hook
+  const { data: userProfile, isLoading, error } = useGetProfile(storedUserId!, {
+    query: {
+      retry: false,
+      enabled: !!storedUserId,
+    }
   })
 
-  // Create user profile mutation
-  const createUserMutation = useMutation({
-    mutationFn: ({ email, displayName }: { email: string; displayName: string }) => 
-      api.createProfile(email, displayName),
-    onSuccess: (response) => {
-      const userId = response.data.id
-      setStoredUserId(userId)
-      queryClient.invalidateQueries({ queryKey: ['user', userId] })
-    },
+  // Create user profile mutation using the generated API client hook
+  const createUserMutation = useCreateProfile({
+    mutation: {
+      onSuccess: (response) => {
+        const userId = response.data.id
+        setStoredUserId(userId)
+        queryClient.invalidateQueries({ queryKey: ['user', userId] })
+      },
+    }
   })
 
   // Create user and store ID
   const createUser = async (email: string, displayName: string) => {
     try {
-      const response = await createUserMutation.mutateAsync({ email, displayName })
+      const response = await createUserMutation.mutateAsync({
+        params: { email, displayName }
+      })
       return response.data
     } catch (err) {
       console.error('Failed to create user:', err)
@@ -52,8 +54,8 @@ export function useUser() {
   }
 
   return {
-    user: userProfile?.data,
-    userId: userProfile?.data?.id,
+    user: userProfile,
+    userId: userProfile?.id,
     isLoading: isLoading || createUserMutation.isPending,
     error,
     createUser,

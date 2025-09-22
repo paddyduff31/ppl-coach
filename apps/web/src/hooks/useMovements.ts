@@ -1,32 +1,25 @@
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { api } from '../api/endpoints'
+import { useGetAllMovements, useGetMovement, useGetMovementsByEquipment, useShuffleMovementsMutation } from '@ppl-coach/api-client'
 
 export function useMovements() {
-  return useQuery({
-    queryKey: ['movements'],
-    queryFn: () => api.getMovements(),
-  })
+  return useGetAllMovements()
 }
 
 export function useMovement(id: string | undefined) {
-  return useQuery({
-    queryKey: ['movements', id],
-    queryFn: () => api.getMovement(id!),
-    enabled: !!id,
+  return useGetMovement(id!, {
+    query: {
+      enabled: !!id,
+    }
   })
 }
 
 export function useMovementsByEquipment(equipmentTypes: number[]) {
-  return useQuery({
-    queryKey: ['movements', 'equipment', equipmentTypes],
-    queryFn: () => api.getMovementsByEquipment(equipmentTypes),
-    enabled: equipmentTypes.length > 0,
+  return useGetMovementsByEquipment({ equipmentTypes }, {
+    query: {
+      enabled: equipmentTypes.length > 0,
+    }
   })
 }
 
 export function useShuffleMovements() {
-  return useMutation({
-    mutationFn: (data: { dayType: number; userId: string; availableEquipment: number[] }) =>
-      api.shuffleMovements(data),
-  })
+  return useShuffleMovementsMutation()
 }

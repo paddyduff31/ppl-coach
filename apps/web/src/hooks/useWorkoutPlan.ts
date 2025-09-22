@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../api/endpoints'
+import { useGetUserSessions } from '@ppl-coach/api-client'
 import { useUser } from './useUser'
 
 type DayType = 1 | 2 | 3 // 1=Push, 2=Pull, 3=Legs
@@ -19,22 +18,14 @@ const DAY_TYPE_DESCRIPTIONS = {
 export function useWorkoutPlan() {
   const { userId } = useUser()
 
-  // Get recent sessions to determine next workout
-  const { data: recentSessions } = useQuery({
-    queryKey: ['sessions', 'user', userId, 'recent'],
-    queryFn: () => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      return api.getUserSessions(
-        userId,
-        thirtyDaysAgo.toISOString().split('T')[0],
-        new Date().toISOString().split('T')[0]
-      )
-    },
-    enabled: !!userId,
+  // Use the generated API client hook to get user sessions
+  const { data: recentSessions, isLoading } = useGetUserSessions(userId!, {
+    query: {
+      enabled: !!userId,
+    }
   })
 
-  const sessions = recentSessions?.data || []
+  const sessions = recentSessions || []
 
   // Determine the next workout day type
   const getNextDayType = (): DayType => {
@@ -98,9 +89,9 @@ export function useWorkoutPlan() {
   // Check if today's workout is already done (must have actual sets logged)
   const isTodayComplete = (): boolean => {
     const today = new Date().toISOString().split('T')[0]
-    return sessions.some(session => 
-      session.date === today && 
-      session.setLogs && 
+    return sessions.some(session =>
+      session.date === today &&
+      session.setLogs &&
       session.setLogs.length > 0
     )
   }
@@ -133,6 +124,6 @@ export function useWorkoutPlan() {
     lastWorkout,
     isTodayComplete: isTodayComplete(),
     totalSessions: sessions.length,
-    isLoading: !recentSessions,
+    isLoading,
   }
 }

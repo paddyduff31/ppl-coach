@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { http } from '../api/http'
-import { api } from '../api/endpoints'
+import { useGetUserSessions, useUpdateSession as useUpdateSessionMutation } from '@ppl-coach/api-client'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 
 export interface SessionSetLog {
@@ -37,14 +36,10 @@ export interface SessionStats {
 export function useUserSessions() {
   const { user } = useAuth()
 
-  return useQuery({
-    queryKey: ['sessions', 'user', user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('User not found')
-      const response = await http.get(`/api/sessions/user/${user.id}`)
-      return response.data as WorkoutSession[]
-    },
-    enabled: !!user?.id,
+  return useGetUserSessions(user?.id!, {
+    query: {
+      enabled: !!user?.id,
+    }
   })
 }
 
@@ -133,16 +128,24 @@ function getLastWorkoutDate(sessions: WorkoutSession[]): string | undefined {
 
 export function useUpdateSession() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
 
-  return useMutation({
-    mutationFn: ({ sessionId, data }: { 
-      sessionId: string; 
-      data: Partial<{ date: string; dayType: number; notes: string }> 
-    }) => api.updateSession(sessionId, data),
-    onSuccess: () => {
-      // Invalidate sessions queries to refetch updated data
-      queryClient.invalidateQueries({ queryKey: ['sessions'] })
-    },
+  return useUpdateSessionMutation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      },
+    }
+  })
+}
+
+export function useUpdateSessionHook() {
+  const queryClient = useQueryClient()
+
+  return useUpdateSessionMutation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      },
+    }
   })
 }

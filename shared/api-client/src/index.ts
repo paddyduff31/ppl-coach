@@ -1,6 +1,10 @@
 // Export the custom axios instance for direct use if needed
 export { axiosInstance } from './mutator/custom-instance';
 
+// Export all generated API hooks and functions
+export * from './generated/pplCoachApi';
+export * from './generated/model';
+
 // Export centralized utilities from both web and mobile apps
 export * from './utils/pagination';
 export * from './utils/query';

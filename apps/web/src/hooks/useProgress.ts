@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { http } from '../api/http'
+import { useGetPersonalRecords, useGetProgressSummary, useGetMuscleGroupProgress } from '@ppl-coach/api-client'
 import { useAuth } from './useAuth'
 
 export interface PersonalRecord {
@@ -28,41 +27,30 @@ export interface ProgressSummary {
 export function usePersonalRecords() {
   const { user } = useAuth()
 
-  return useQuery({
-    queryKey: ['progress', 'personal-records', user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('User not found')
-      const response = await http.get(`/api/progress/user/${user.id}/personal-records`)
-      return response.data as PersonalRecord[]
-    },
-    enabled: !!user?.id,
+  return useGetPersonalRecords(user?.id!, {
+    query: {
+      enabled: !!user?.id,
+    }
   })
 }
 
 export function useProgressSummary() {
   const { user } = useAuth()
 
-  return useQuery({
-    queryKey: ['progress', 'summary', user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('User not found')
-      const response = await http.get(`/api/progress/user/${user.id}/summary`)
-      return response.data as ProgressSummary
-    },
-    enabled: !!user?.id,
+  return useGetProgressSummary(user?.id!, {
+    query: {
+      enabled: !!user?.id,
+    }
   })
 }
 
 export function useMuscleGroupProgress() {
   const { user } = useAuth()
 
-  return useQuery({
-    queryKey: ['progress', 'muscle-groups', user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('User not found')
-      const response = await http.get(`/api/progress/user/${user.id}/muscle-groups`)
-      return response.data as MuscleGroupProgress[]
-    },
-    enabled: !!user?.id,
+  // Note: This hook might need params - check the generated API client for GetMuscleGroupProgressParams
+  return useGetMuscleGroupProgress(user?.id!, {}, {
+    query: {
+      enabled: !!user?.id,
+    }
   })
 }
