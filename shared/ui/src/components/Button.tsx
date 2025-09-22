@@ -1,6 +1,6 @@
 import React from 'react';
-import { platformUtils, isWeb, isMobile } from './platform';
-import { colors, spacing, borderRadius, typography, shadows } from './tokens';
+import { platformUtils, isWeb } from '../platform';
+import { colors, spacing, borderRadius, typography, shadows } from '../tokens';
 
 // Cross-platform button component
 export interface ButtonProps {
@@ -29,7 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: borderRadius.md,
-    borderWidth: platformUtils.select({ web: '1px', mobile: 1, default: 1 }),
+    borderWidth: platformUtils.select<string | number>({ web: '1px', mobile: 1, default: 1 }),
     fontFamily: typography.fonts.sans,
     fontWeight: typography.weights.medium,
     opacity: disabled || loading ? 0.6 : 1,
@@ -94,7 +94,7 @@ export const Button: React.FC<ButtonProps> = ({
           border: `${combinedStyle.borderWidth} solid ${combinedStyle.borderColor}`,
           cursor: disabled || loading ? 'not-allowed' : 'pointer',
           transition: 'all 0.15s ease-in-out',
-          ...shadows.sm,
+          ...(shadows.sm as any),
         }}
         onClick={onPress}
         disabled={disabled || loading}
@@ -109,7 +109,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[combinedStyle, shadows.sm, style]}
+      style={[combinedStyle, shadows.sm as any, style]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.8}

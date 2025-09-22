@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # Production database with optimized settings
+  db:
+    image: postgres:16-alpine
+    container_name: ppl-coach-db-prod
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pplcoach}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-pplcoach_prod}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    command: |
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pplcoach} -d ${POSTGRES_DB:-pplcoach_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ppl-coach-network
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: ppl-coach-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - ppl-coach-network
+
+  # Backend API with production settings
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile.production
+    container_name: ppl-coach-api-prod
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      DATABASE_URL: Host=db;Port=5432;Database=${POSTGRES_DB:-pplcoach_prod};Username=${POSTGRES_USER:-pplcoach};Password=${POSTGRES_PASSWORD}
+      REDIS_CONNECTION: redis:6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,https://app.pplcoach.com}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ppl-coach-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Nginx reverse proxy with SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: ppl-coach-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./apps/web/dist:/usr/share/nginx/html/web:ro
+    depends_on:
+      - backend
+    networks:
+      - ppl-coach-network
+
+  # Jaeger for distributed tracing (production)
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: ppl-coach-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Accept traces
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    networks:
+      - ppl-coach-network
+
+volumes:
+  pgdata_prod:
+    name: ppl_coach_postgres_prod
+  redis_data:
+    name: ppl_coach_redis_data
+
+networks:
+  ppl-coach-network:
+    driver: bridge
+    name: ppl-coach-network

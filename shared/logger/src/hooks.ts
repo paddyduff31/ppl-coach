@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { logger, LogLevel } from './logger';
+import { logger } from './logger';
 
 // React hook for component-level logging
 export const useLogger = (componentName: string) => {

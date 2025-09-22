@@ -1,5 +1,5 @@
 // Cross-platform detection
-const isWeb = typeof window !== 'undefined' && !window.ReactNativeWebView;
+const isWeb = typeof window !== 'undefined' && !(window as any).ReactNativeWebView;
 const isMobile = !isWeb;
 const isDev = process.env.NODE_ENV === 'development';
 

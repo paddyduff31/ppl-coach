@@ -50,7 +50,7 @@ public class OAuthService : IOAuthService
         };
     }
 
-    public async Task<string> GenerateAuthorizationUrlAsync(IntegrationType type, Guid userId, string? redirectUrl = null)
+    public Task<string> GenerateAuthorizationUrlAsync(IntegrationType type, Guid userId, string? redirectUrl = null)
     {
         if (!_configs.TryGetValue(type, out var config))
             throw new NotSupportedException($"Integration type {type} is not supported");
@@ -73,7 +73,7 @@ public class OAuthService : IOAuthService
         }
 
         var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
-        return $"{config.AuthorizationUrl}?{queryString}";
+        return Task.FromResult($"{config.AuthorizationUrl}?{queryString}");
     }
 
     public async Task<OAuthTokenResponse> ExchangeCodeForTokenAsync(IntegrationType type, string code, string state)

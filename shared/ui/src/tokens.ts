@@ -76,14 +76,14 @@ export const typography = {
 
   // Font sizes (in platform-appropriate units)
   sizes: {
-    xs: platformUtils.select({ web: '12px', mobile: 12, default: 12 }),
-    sm: platformUtils.select({ web: '14px', mobile: 14, default: 14 }),
-    base: platformUtils.select({ web: '16px', mobile: 16, default: 16 }),
-    lg: platformUtils.select({ web: '18px', mobile: 18, default: 18 }),
-    xl: platformUtils.select({ web: '20px', mobile: 20, default: 20 }),
-    '2xl': platformUtils.select({ web: '24px', mobile: 24, default: 24 }),
-    '3xl': platformUtils.select({ web: '30px', mobile: 30, default: 30 }),
-    '4xl': platformUtils.select({ web: '36px', mobile: 36, default: 36 }),
+    xs: platformUtils.select<string | number>({ web: '12px', mobile: 12, default: '12px' }),
+    sm: platformUtils.select<string | number>({ web: '14px', mobile: 14, default: '14px' }),
+    base: platformUtils.select<string | number>({ web: '16px', mobile: 16, default: '16px' }),
+    lg: platformUtils.select<string | number>({ web: '18px', mobile: 18, default: '18px' }),
+    xl: platformUtils.select<string | number>({ web: '20px', mobile: 20, default: '20px' }),
+    '2xl': platformUtils.select<string | number>({ web: '24px', mobile: 24, default: '24px' }),
+    '3xl': platformUtils.select<string | number>({ web: '30px', mobile: 30, default: '30px' }),
+    '4xl': platformUtils.select<string | number>({ web: '36px', mobile: 36, default: '36px' }),
   },
 
   // Font weights
@@ -104,29 +104,29 @@ export const typography = {
 
 // Spacing scale (works for both margin/padding and layout)
 export const spacing = {
-  0: platformUtils.select({ web: '0px', mobile: 0, default: 0 }),
-  1: platformUtils.select({ web: '4px', mobile: 4, default: 4 }),
-  2: platformUtils.select({ web: '8px', mobile: 8, default: 8 }),
-  3: platformUtils.select({ web: '12px', mobile: 12, default: 12 }),
-  4: platformUtils.select({ web: '16px', mobile: 16, default: 16 }),
-  5: platformUtils.select({ web: '20px', mobile: 20, default: 20 }),
-  6: platformUtils.select({ web: '24px', mobile: 24, default: 24 }),
-  8: platformUtils.select({ web: '32px', mobile: 32, default: 32 }),
-  10: platformUtils.select({ web: '40px', mobile: 40, default: 40 }),
-  12: platformUtils.select({ web: '48px', mobile: 48, default: 48 }),
-  16: platformUtils.select({ web: '64px', mobile: 64, default: 64 }),
-  20: platformUtils.select({ web: '80px', mobile: 80, default: 80 }),
+  0: platformUtils.select<string | number>({ web: '0px', mobile: 0, default: '0px' }),
+  1: platformUtils.select<string | number>({ web: '4px', mobile: 4, default: '4px' }),
+  2: platformUtils.select<string | number>({ web: '8px', mobile: 8, default: '8px' }),
+  3: platformUtils.select<string | number>({ web: '12px', mobile: 12, default: '12px' }),
+  4: platformUtils.select<string | number>({ web: '16px', mobile: 16, default: '16px' }),
+  5: platformUtils.select<string | number>({ web: '20px', mobile: 20, default: '20px' }),
+  6: platformUtils.select<string | number>({ web: '24px', mobile: 24, default: '24px' }),
+  8: platformUtils.select<string | number>({ web: '32px', mobile: 32, default: '32px' }),
+  10: platformUtils.select<string | number>({ web: '40px', mobile: 40, default: '40px' }),
+  12: platformUtils.select<string | number>({ web: '48px', mobile: 48, default: '48px' }),
+  16: platformUtils.select<string | number>({ web: '64px', mobile: 64, default: '64px' }),
+  20: platformUtils.select<string | number>({ web: '80px', mobile: 80, default: '80px' }),
 };
 
 // Border radius scale
 export const borderRadius = {
-  none: platformUtils.select({ web: '0px', mobile: 0, default: 0 }),
-  sm: platformUtils.select({ web: '2px', mobile: 2, default: 2 }),
-  base: platformUtils.select({ web: '6px', mobile: 6, default: 6 }),
-  md: platformUtils.select({ web: '8px', mobile: 8, default: 8 }),
-  lg: platformUtils.select({ web: '12px', mobile: 12, default: 12 }),
-  xl: platformUtils.select({ web: '16px', mobile: 16, default: 16 }),
-  full: platformUtils.select({ web: '9999px', mobile: 9999, default: 9999 }),
+  none: platformUtils.select<string | number>({ web: '0px', mobile: 0, default: '0px' }),
+  sm: platformUtils.select<string | number>({ web: '2px', mobile: 2, default: '2px' }),
+  base: platformUtils.select<string | number>({ web: '6px', mobile: 6, default: '6px' }),
+  md: platformUtils.select<string | number>({ web: '8px', mobile: 8, default: '8px' }),
+  lg: platformUtils.select<string | number>({ web: '12px', mobile: 12, default: '12px' }),
+  xl: platformUtils.select<string | number>({ web: '16px', mobile: 16, default: '16px' }),
+  full: platformUtils.select<string | number>({ web: '9999px', mobile: 9999, default: '9999px' }),
 };
 
 // Shadow/elevation styles

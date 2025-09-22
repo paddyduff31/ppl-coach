@@ -1,5 +1,5 @@
 // Cross-platform detection utility
-export const isWeb = typeof window !== 'undefined' && !window.ReactNativeWebView;
+export const isWeb = typeof window !== 'undefined' && !(window as any).ReactNativeWebView;
 export const isMobile = !isWeb;
 
 // Platform-specific imports (conditional to avoid errors)

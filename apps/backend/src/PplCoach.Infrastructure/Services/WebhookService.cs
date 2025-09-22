@@ -43,20 +43,21 @@ public class WebhookService(
         }
     }
 
-    public async Task<string> GetWebhookUrlAsync(IntegrationType type)
+    public Task<string> GetWebhookUrlAsync(IntegrationType type)
     {
         var baseUrl = configuration["BaseUrl"] ?? "https://localhost:5179";
-        return $"{baseUrl}/api/webhooks/{type.ToString().ToLower()}";
+        return Task.FromResult($"{baseUrl}/api/webhooks/{type.ToString().ToLower()}");
     }
 
-    public async Task<bool> VerifyWebhookSignatureAsync(IntegrationType type, string payload, string signature)
+    public Task<bool> VerifyWebhookSignatureAsync(IntegrationType type, string payload, string signature)
     {
-        return type switch
+        var result = type switch
         {
             IntegrationType.Strava => VerifyStravaSignature(payload, signature),
             IntegrationType.MyFitnessPal => VerifyMyFitnessPalSignature(payload, signature),
             _ => true // Default to allow if verification not implemented
         };
+        return Task.FromResult(result);
     }
 
     private WebhookEvent? ProcessStravaWebhook(string payload, Dictionary<string, string> headers)
@@ -124,7 +125,7 @@ public class WebhookService(
         return Convert.ToHexString(hash).ToLower();
     }
 
-    private async Task HandleWebhookEventAsync(WebhookEvent webhookEvent)
+    private Task HandleWebhookEventAsync(WebhookEvent webhookEvent)
     {
         // Find the integration for this external user
         // This would need to be implemented based on your requirements
@@ -137,5 +138,6 @@ public class WebhookService(
             // Find integration by external user ID and trigger sync
             // await _integrationService.TriggerSyncForExternalUserAsync(webhookEvent.Type, webhookEvent.ExternalUserId);
         }
+        return Task.CompletedTask;
     }
 }

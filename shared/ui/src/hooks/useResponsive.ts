@@ -39,7 +39,7 @@ export const useResponsive = (): ResponsiveState => {
       // React Native dimension change listener
       try {
         const { Dimensions } = require('react-native');
-        const subscription = Dimensions.addEventListener('change', ({ window }) => {
+        const subscription = Dimensions.addEventListener('change', ({ window }: { window: any }) => {
           setDimensions(window);
         });
 

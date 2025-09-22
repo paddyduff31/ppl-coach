@@ -1,0 +1,42 @@
+# Multi-stage production Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 --ingroup nodejs nextjs
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy csproj files and restore dependencies
+COPY ["src/PplCoach.Api/PplCoach.Api.csproj", "src/PplCoach.Api/"]
+COPY ["src/PplCoach.Application/PplCoach.Application.csproj", "src/PplCoach.Application/"]
+COPY ["src/PplCoach.Domain/PplCoach.Domain.csproj", "src/PplCoach.Domain/"]
+COPY ["src/PplCoach.Infrastructure/PplCoach.Infrastructure.csproj", "src/PplCoach.Infrastructure/"]
+RUN dotnet restore "src/PplCoach.Api/PplCoach.Api.csproj"
+
+# Copy source code and build
+COPY . .
+WORKDIR "/src/src/PplCoach.Api"
+RUN dotnet build "PplCoach.Api.csproj" -c Release -o /app/build
+
+# Publish stage
+FROM build AS publish
+RUN dotnet publish "PplCoach.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Final stage
+FROM base AS final
+WORKDIR /app
+COPY --from=publish --chown=nodejs:nodejs /app/publish .
+
+# Switch to non-root user
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "PplCoach.Api.dll"]

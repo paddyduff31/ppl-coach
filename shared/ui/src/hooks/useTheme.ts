@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { colors, typography, spacing, borderRadius, shadows } from '../tokens';
-import { platformUtils } from '../platform';
 
 export interface Theme {
   colors: typeof colors;

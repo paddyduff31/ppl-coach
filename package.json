@@ -13,6 +13,10 @@
     "dev:backend": "cd apps/backend && dotnet run --project src/PplCoach.Api/PplCoach.Api.csproj",
     "dev:db": "docker compose up -d db",
     "dev:with-api": "concurrently \"npm run dev:backend\" \"wait-on http://localhost:5000/swagger/v1/swagger.json && npm run api:generate\" \"npm run dev:web\"",
+    "dev:with-observability": "concurrently \"npm run dev:backend\" \"npm run dev:web\" \"docker run -p 16686:16686 jaegertracing/all-in-one:latest\"",
+    "dev:full-stack": "./dev-monorepo.sh && npm run dev:observability",
+    "dev:observability": "docker run -d -p 16686:16686 --name jaeger jaegertracing/all-in-one:latest || docker start jaeger",
+    "stop:observability": "docker stop jaeger || true",
     "build": "turbo build",
     "build:web": "cd apps/web && npm run build",
     "build:mobile": "cd apps/mobile && pnpm build",
@@ -40,7 +44,22 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "turbo clean && cd apps/backend && dotnet clean",
     "reset": "npm run clean && docker compose down -v && npm install",
-    "setup": "npm install && npm run dev:db"
+    "setup": "npm install && npm run dev:db",
+
+    // Database migration scripts
+    "db:migrate": "cd apps/backend && dotnet ef database update --project src/PplCoach.Infrastructure --startup-project src/PplCoach.Api",
+    "db:migration:add": "cd apps/backend && dotnet ef migrations add",
+    "db:migration:remove": "cd apps/backend && dotnet ef migrations remove --project src/PplCoach.Infrastructure --startup-project src/PplCoach.Api",
+    "db:reset": "npm run clean && docker compose down -v && npm run dev:db && npm run db:migrate",
+
+    // Production readiness checks
+    "health:check": "curl -f http://localhost:5000/health || exit 1",
+    "ready:check": "curl -f http://localhost:5000/health/ready || exit 1",
+    "security:scan": "npm audit && cd apps/backend && dotnet list package --vulnerable",
+
+    // Performance testing
+    "perf:test": "cd tests/performance && artillery run load-test.yml",
+    "perf:api": "cd tests/performance && artillery run api-load-test.yml"
   },
   "workspaces": [
     "apps/web",

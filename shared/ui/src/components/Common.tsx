@@ -1,6 +1,6 @@
 import React from 'react';
-import { platformUtils, isWeb } from './platform';
-import { colors, spacing, borderRadius, typography, shadows } from './tokens';
+import { platformUtils, isWeb } from '../platform';
+import { colors, spacing, borderRadius, typography, shadows } from '../tokens';
 
 // Cross-platform card component
 export interface CardProps {
@@ -32,12 +32,12 @@ export const Card: React.FC<CardProps> = ({
     },
     outlined: {
       backgroundColor: colors.background.primary,
-      borderWidth: platformUtils.select({ web: '1px', mobile: 1, default: 1 }),
+      borderWidth: platformUtils.select<string | number>({ web: '1px', mobile: 1, default: 1 }),
       borderColor: colors.gray[200],
     },
     elevated: {
       backgroundColor: colors.background.primary,
-      ...shadows.md,
+      ...(shadows.md as any),
     },
   };
 
@@ -137,16 +137,16 @@ export const Text: React.FC<TextProps> = ({
       fontSize: typography.sizes.xs,
       fontWeight: typography.weights.medium,
       textTransform: 'uppercase',
-      letterSpacing: platformUtils.select({ web: '0.05em', mobile: 0.5, default: 0.5 }),
+      letterSpacing: platformUtils.select<string | number>({ web: '0.05em', mobile: 0.5, default: 0.5 }),
     },
   };
 
   const combinedStyle = {
     fontFamily: typography.fonts.sans,
     color,
-    fontWeight: typography.weights[weight],
     textAlign: align,
     ...variantStyles[variant],
+    fontWeight: typography.weights[weight],
     ...style,
   };
 

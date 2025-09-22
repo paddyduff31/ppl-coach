@@ -23,7 +23,7 @@ public static class WebhookEndpoints
         });
 
         // Strava webhook verification (GET)
-        group.MapGet("/strava", async (
+        group.MapGet("/strava", (
             [FromQuery(Name = "hub.mode")] string mode,
             [FromQuery(Name = "hub.challenge")] string challenge,
             [FromQuery(Name = "hub.verify_token")] string verifyToken,
@@ -34,7 +34,6 @@ public static class WebhookEndpoints
 
             if (mode == "subscribe" && verifyToken == expectedToken)
             {
-                var hubChallenge = "hub.challenge";
                 return Results.Json(new { hubChallenge = challenge });
             }
 

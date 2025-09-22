@@ -220,18 +220,18 @@ public class IntegrationService(
         };
     }
 
-    private async Task<string> GetStravaUserIdAsync(string accessToken)
+    private Task<string> GetStravaUserIdAsync(string accessToken)
     {
         // Make API call to Strava to get user info
         // This is a placeholder implementation
-        return "strava_user_" + Guid.NewGuid().ToString("N")[..8];
+        return Task.FromResult("strava_user_" + Guid.NewGuid().ToString("N")[..8]);
     }
 
-    private async Task<string> GetMyFitnessPalUserIdAsync(string accessToken)
+    private Task<string> GetMyFitnessPalUserIdAsync(string accessToken)
     {
         // Make API call to MyFitnessPal to get user info
         // This is a placeholder implementation
-        return "mfp_user_" + Guid.NewGuid().ToString("N")[..8];
+        return Task.FromResult("mfp_user_" + Guid.NewGuid().ToString("N")[..8]);
     }
 
     private async Task RefreshIntegrationTokenAsync(ThirdPartyIntegration integration)
@@ -246,16 +246,16 @@ public class IntegrationService(
         integration.TokenExpiresAt = tokenResponse.ExpiresAt;
     }
 
-    private async Task<SyncResult> SyncStravaDataAsync(ThirdPartyIntegration integration)
+    private Task<SyncResult> SyncStravaDataAsync(ThirdPartyIntegration integration)
     {
         // Placeholder for Strava sync implementation
-        return new SyncResult { RecordsProcessed = 0, RecordsImported = 0, RecordsSkipped = 0 };
+        return Task.FromResult(new SyncResult { RecordsProcessed = 0, RecordsImported = 0, RecordsSkipped = 0 });
     }
 
-    private async Task<SyncResult> SyncMyFitnessPalDataAsync(ThirdPartyIntegration integration)
+    private Task<SyncResult> SyncMyFitnessPalDataAsync(ThirdPartyIntegration integration)
     {
         // Placeholder for MyFitnessPal sync implementation
-        return new SyncResult { RecordsProcessed = 0, RecordsImported = 0, RecordsSkipped = 0 };
+        return Task.FromResult(new SyncResult { RecordsProcessed = 0, RecordsImported = 0, RecordsSkipped = 0 });
     }
 
     private class StateData
