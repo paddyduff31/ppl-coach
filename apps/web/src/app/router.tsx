@@ -13,7 +13,7 @@ import Integrations from '../pages/Integrations'
 import { Navigation } from '../components/Navigation'
 import { GlobalShortcuts } from '../components/GlobalShortcuts'
 import { useGlobalShortcuts } from '../hooks/useKeyboardShortcuts'
-import { PageErrorBoundary } from '../components/ui/error-boundary'
+import { PageErrorBoundary } from '../components/ErrorBoundary'
 // Import the new awesome features
 import { SocialWorkoutHub } from '../components/features/SocialWorkoutHub'
 import { ChallengesHub } from '../components/features/ChallengesHub'

@@ -8,6 +8,7 @@ export * from './generated/model';
 // Export centralized utilities from both web and mobile apps
 export * from './utils/pagination';
 export * from './utils/query';
+export * from './utils/health-check';
 export { APIProvider, getQueryClient, useQueryClient } from './providers/api-provider';
 
 // React Query provider setup utility (legacy export for compatibility)

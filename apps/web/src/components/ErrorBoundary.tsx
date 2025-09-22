@@ -1,4 +1,4 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useAppStore } from '../stores/appStore';
 
 interface Props {
@@ -164,4 +164,13 @@ export function useErrorHandler() {
     // You could also trigger a toast notification here
     // toast.error('An error occurred. Please try again.');
   };
+}
+
+// Convenience wrapper for page-level error boundaries
+export function PageErrorBoundary({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary level="page">
+      {children}
+    </ErrorBoundary>
+  );
 }
