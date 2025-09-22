@@ -1,151 +1,134 @@
-import { useGetUserSessions, useUpdateSession as useUpdateSessionMutation } from '@ppl-coach/api-client'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
+import { toast } from 'sonner'
 
-export interface SessionSetLog {
-  id: string
-  movementId: string
-  movementName: string
-  weightKg: number
-  reps: number
-  rpe: number
-  tempo: string
-  notes: string
-  loggedAt: string
+// API functions - replace with your actual API client
+const fetchUserSessions = async (userId: string) => {
+  const response = await fetch(`http://localhost:5179/api/sessions/user/${userId}`)
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Failed to fetch sessions: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  return response.json()
 }
 
-export interface WorkoutSession {
-  id: string
-  userId: string
-  date: string
-  dayType: number
-  notes: string
-  setLogs: SessionSetLog[]
-  createdAt: string
-}
+const fetchSessionStats = async (userId: string) => {
+  const response = await fetch(`http://localhost:5179/api/sessions/user/${userId}/stats`)
 
-export interface SessionStats {
-  totalSessions: number
-  thisWeekSessions: number
-  totalVolume: number
-  averageRpe: number
-  workoutStreak: number
-  lastWorkoutDate?: string
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Failed to fetch session stats: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  return response.json()
 }
 
 export function useUserSessions() {
+  const { user, isAuthenticated } = useAuth()
+
+  return useQuery({
+    queryKey: ['sessions', user?.id],
+    queryFn: () => fetchUserSessions(user!.id),
+    enabled: isAuthenticated && !!user?.id,
+    retry: (failureCount, error) => {
+      // Don't retry on 401/403 (auth issues) or 404 (user not found)
+      const status = (error as any)?.response?.status
+      if (status === 401 || status === 403 || status === 404) {
+        return false
+      }
+      return failureCount < 3
+    },
+    onError: (error) => {
+      console.error('Session fetch error:', error)
+      toast.error(`Failed to load sessions: ${error.message}`)
+    }
+  })
+}
+
+export function useSessionStats() {
+  const { user, isAuthenticated } = useAuth()
+
+  return useQuery({
+    queryKey: ['sessionStats', user?.id],
+    queryFn: () => fetchSessionStats(user!.id),
+    enabled: isAuthenticated && !!user?.id,
+    retry: (failureCount, error) => {
+      // Don't retry on auth issues
+      const status = (error as any)?.response?.status
+      if (status === 401 || status === 403 || status === 404) {
+        return false
+      }
+      return failureCount < 3
+    },
+    onError: (error) => {
+      console.error('Session stats fetch error:', error)
+      toast.error(`Failed to load session statistics: ${error.message}`)
+    }
+  })
+}
+
+export function useCreateSession() {
+  const queryClient = useQueryClient()
   const { user } = useAuth()
 
-  return useGetUserSessions(user?.id!, {
-    query: {
-      enabled: !!user?.id,
+  return useMutation({
+    mutationFn: async (sessionData: any) => {
+      const response = await fetch('http://localhost:5179/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to create session: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate sessions query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['sessions', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['sessionStats', user?.id] })
+      toast.success('Session created successfully!')
+    },
+    onError: (error) => {
+      console.error('Session creation error:', error)
+      toast.error(`Failed to create session: ${error.message}`)
     }
   })
-}
-
-export function useSessionStats(sessions: WorkoutSession[] = []) {
-  // Calculate stats from sessions data
-  const stats: SessionStats = {
-    totalSessions: sessions.length,
-    thisWeekSessions: getThisWeekSessions(sessions).length,
-    totalVolume: calculateTotalVolume(sessions),
-    averageRpe: calculateAverageRpe(sessions),
-    workoutStreak: calculateWorkoutStreak(sessions),
-    lastWorkoutDate: getLastWorkoutDate(sessions),
-  }
-
-  return stats
-}
-
-function getThisWeekSessions(sessions: WorkoutSession[]): WorkoutSession[] {
-  const now = new Date()
-  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
-  startOfWeek.setHours(0, 0, 0, 0)
-
-  return sessions.filter(session => {
-    const sessionDate = new Date(session.date)
-    return sessionDate >= startOfWeek
-  })
-}
-
-function calculateTotalVolume(sessions: WorkoutSession[]): number {
-  return sessions.reduce((total, session) => {
-    const sessionVolume = session.setLogs.reduce((sessionTotal, set) => {
-      return sessionTotal + (set.weightKg * set.reps)
-    }, 0)
-    return total + sessionVolume
-  }, 0)
-}
-
-function calculateAverageRpe(sessions: WorkoutSession[]): number {
-  const allSets = sessions.flatMap(session => session.setLogs)
-  const setsWithRpe = allSets.filter(set => set.rpe > 0)
-
-  if (setsWithRpe.length === 0) return 0
-
-  const totalRpe = setsWithRpe.reduce((sum, set) => sum + set.rpe, 0)
-  return Math.round((totalRpe / setsWithRpe.length) * 10) / 10
-}
-
-function calculateWorkoutStreak(sessions: WorkoutSession[]): number {
-  if (sessions.length === 0) return 0
-
-  const sortedSessions = [...sessions].sort((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
-
-  let streak = 0
-  let currentDate = new Date()
-  currentDate.setHours(0, 0, 0, 0)
-
-  for (const session of sortedSessions) {
-    const sessionDate = new Date(session.date)
-    sessionDate.setHours(0, 0, 0, 0)
-
-    const daysDiff = Math.floor((currentDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24))
-
-    if (daysDiff <= 1) {
-      streak++
-      currentDate = sessionDate
-    } else if (daysDiff > 2) {
-      // Allow one rest day, but more than 2 days breaks the streak
-      break
-    }
-  }
-
-  return streak
-}
-
-function getLastWorkoutDate(sessions: WorkoutSession[]): string | undefined {
-  if (sessions.length === 0) return undefined
-
-  const sortedSessions = [...sessions].sort((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
-
-  return sortedSessions[0]?.date
 }
 
 export function useUpdateSession() {
-  const queryClient = useQueryClient()
+  const { user } = useAuth()
 
-  return useUpdateSessionMutation({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['sessions'] })
-      },
-    }
-  })
-}
+  return useMutation({
+    mutationFn: async ({ sessionId, sessionData }: { sessionId: string, sessionData: any }) => {
+      const response = await fetch(`http://localhost:5179/api/sessions/${sessionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData),
+      })
 
-export function useUpdateSessionHook() {
-  const queryClient = useQueryClient()
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to update session: ${response.status} ${response.statusText} - ${errorText}`)
+      }
 
-  return useUpdateSessionMutation({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['sessions'] })
-      },
+      return response.json()
+    },
+    onSuccess: () => {
+      toast.success('Session updated successfully!')
+    },
+    onError: (error) => {
+      console.error('Session update error:', error)
+      toast.error(`Failed to update session: ${error.message}`)
     }
   })
 }

@@ -41,8 +41,9 @@ class HealthCheckService {
       window.addEventListener('offline', this.handleOffline.bind(this));
     }
 
-    // Start periodic health checks
-    this.startPeriodicChecks();
+    // DISABLED: Don't auto-start health checks - they create noise in logs
+    // Only perform health checks when explicitly requested
+    // this.startPeriodicChecks();
   }
 
   /**

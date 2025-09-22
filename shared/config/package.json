@@ -2,6 +2,7 @@
   "name": "@ppl-coach/config",
   "version": "0.1.0",
   "description": "Shared configuration files for PPL Coach monorepo",
+  "type": "module",
   "private": true,
   "files": [
     "*.js",
@@ -9,4 +10,3 @@
     "*.ts"
   ]
 }
-

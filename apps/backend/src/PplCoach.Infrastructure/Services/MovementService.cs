@@ -9,43 +9,33 @@ using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class MovementService : IMovementService
+public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
+    : IMovementService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
-    private readonly PplCoachDbContext _context;
-
-    public MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
-    {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-        _context = context;
-    }
-
     public async Task<List<MovementDto>> GetAllAsync()
     {
-        var movements = await _unitOfWork.Movements.GetAllAsync();
-        return _mapper.Map<List<MovementDto>>(movements);
+        var movements = await unitOfWork.Movements.GetAllAsync();
+        return mapper.Map<List<MovementDto>>(movements);
     }
 
     public async Task<List<MovementDto>> GetByEquipmentAsync(EquipmentType availableEquipment)
     {
-        var movements = await _unitOfWork.Movements
+        var movements = await unitOfWork.Movements
             .FindAsync(m => (m.Requires & availableEquipment) == m.Requires);
-        return _mapper.Map<List<MovementDto>>(movements);
+        return mapper.Map<List<MovementDto>>(movements);
     }
 
     public async Task<MovementDto?> GetByIdAsync(Guid id)
     {
-        var movement = await _unitOfWork.Movements.GetByIdAsync(id);
-        return movement != null ? _mapper.Map<MovementDto>(movement) : null;
+        var movement = await unitOfWork.Movements.GetByIdAsync(id);
+        return movement != null ? mapper.Map<MovementDto>(movement) : null;
     }
 
     public async Task<List<MovementDto>> ShuffleMovementsAsync(ShuffleRequestDto request)
     {
         var availableEquipment = request.AvailableEquipment.Aggregate(EquipmentType.None, (current, eq) => current | eq);
 
-        var query = _context.Movements
+        var query = context.Movements
             .Where(m => (m.Requires & availableEquipment) == m.Requires);
 
         query = request.DayType switch
@@ -64,7 +54,7 @@ public class MovementService : IMovementService
         };
 
         var cutoffDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2));
-        var recentMovements = await _context.SetLogs
+        var recentMovements = await context.SetLogs
             .Include(sl => sl.Session)
             .Where(sl => sl.Session.UserId == request.UserId && sl.Session.Date >= cutoffDate)
             .Select(sl => sl.MovementId)
@@ -80,6 +70,6 @@ public class MovementService : IMovementService
             .Take(6)
             .ToList();
 
-        return _mapper.Map<List<MovementDto>>(orderedMovements);
+        return mapper.Map<List<MovementDto>>(orderedMovements);
     }
 }

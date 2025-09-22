@@ -6,40 +6,31 @@ using PplCoach.Domain.Repositories;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class UserProfileService : IUserProfileService
+public class UserProfileService(IUnitOfWork unitOfWork, IMapper mapper) : IUserProfileService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
-
-    public UserProfileService(IUnitOfWork unitOfWork, IMapper mapper)
-    {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-    }
-
     public async Task<UserProfileDto?> GetByIdAsync(Guid id)
     {
-        var profile = await _unitOfWork.UserProfiles.GetByIdAsync(id);
-        return profile != null ? _mapper.Map<UserProfileDto>(profile) : null;
+        var profile = await unitOfWork.UserProfiles.GetByIdAsync(id);
+        return profile != null ? mapper.Map<UserProfileDto>(profile) : null;
     }
 
     public async Task<UserProfileDto?> GetByEmailAsync(string email)
     {
-        var profile = await _unitOfWork.UserProfiles.FirstOrDefaultAsync(u => u.Email == email);
-        return profile != null ? _mapper.Map<UserProfileDto>(profile) : null;
+        var profile = await unitOfWork.UserProfiles.FirstOrDefaultAsync(u => u.Email == email);
+        return profile != null ? mapper.Map<UserProfileDto>(profile) : null;
     }
 
     public async Task<UserProfileDto> UpdateAsync(Guid id, UpdateUserProfileDto dto)
     {
-        var profile = await _unitOfWork.UserProfiles.GetByIdAsync(id);
+        var profile = await unitOfWork.UserProfiles.GetByIdAsync(id);
         if (profile == null)
             throw new InvalidOperationException($"User profile with id {id} not found");
 
-        _mapper.Map(dto, profile);
-        _unitOfWork.UserProfiles.Update(profile);
-        await _unitOfWork.SaveChangesAsync();
+        mapper.Map(dto, profile);
+        unitOfWork.UserProfiles.Update(profile);
+        await unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<UserProfileDto>(profile);
+        return mapper.Map<UserProfileDto>(profile);
     }
 
     public async Task<UserProfileDto> CreateAsync(string email, string displayName)
@@ -52,9 +43,9 @@ public class UserProfileService : IUserProfileService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _unitOfWork.UserProfiles.AddAsync(profile);
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.UserProfiles.AddAsync(profile);
+        await unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<UserProfileDto>(profile);
+        return mapper.Map<UserProfileDto>(profile);
     }
 }

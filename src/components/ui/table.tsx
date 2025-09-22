@@ -1,4 +1,4 @@
-import * as React from "react"
+ import * as React from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
@@ -155,6 +155,7 @@ export function VirtualTable<TData extends Record<string, any>>({
 
   // Filter data based on search
   const filteredData = React.useMemo(() => {
+    if (!Array.isArray(data)) return []
     if (!searchTerm) return data
 
     return data.filter((row) => {
@@ -168,7 +169,7 @@ export function VirtualTable<TData extends Record<string, any>>({
 
   // Sort filtered data
   const sortedData = React.useMemo(() => {
-    if (!sortConfig.key) return filteredData
+    if (!Array.isArray(filteredData) || !sortConfig.key) return filteredData || []
 
     return [...filteredData].sort((a, b) => {
       const aVal = a[sortConfig.key!]

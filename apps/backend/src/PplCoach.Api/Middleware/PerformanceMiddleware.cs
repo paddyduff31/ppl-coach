@@ -3,17 +3,8 @@ using System.Text.Json;
 
 namespace PplCoach.Api.Middleware;
 
-public class PerformanceMiddleware
+public class PerformanceMiddleware(RequestDelegate next, ILogger<PerformanceMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<PerformanceMiddleware> _logger;
-
-    public PerformanceMiddleware(RequestDelegate next, ILogger<PerformanceMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -21,7 +12,7 @@ public class PerformanceMiddleware
 
         try
         {
-            await _next(context);
+            await next(context);
         }
         finally
         {
@@ -31,15 +22,18 @@ public class PerformanceMiddleware
             // Log slow requests
             if (responseTime > 1000)
             {
-                _logger.LogWarning("Slow request detected: {Method} {Path} took {ResponseTime}ms",
+                logger.LogWarning("Slow request detected: {Method} {Path} took {ResponseTime}ms",
                     context.Request.Method,
                     context.Request.Path,
                     responseTime);
             }
 
-            // Add performance headers
-            context.Response.Headers.Add("X-Response-Time", responseTime.ToString());
-            context.Response.Headers.Add("X-Timestamp", startTime.ToString("O"));
+            // Add performance headers only if response hasn't started
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Headers["X-Response-Time"] = responseTime.ToString();
+                context.Response.Headers["X-Timestamp"] = startTime.ToString("O");
+            }
 
             // Log performance metrics
             using var activity = Activity.Current;

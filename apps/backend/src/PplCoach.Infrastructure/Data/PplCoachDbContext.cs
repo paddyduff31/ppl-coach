@@ -13,6 +13,9 @@ public class PplCoachDbContext(DbContextOptions<PplCoachDbContext> options) : Db
     public DbSet<WorkoutSession> WorkoutSessions { get; set; }
     public DbSet<SetLog> SetLogs { get; set; }
     public DbSet<BodyMetric> BodyMetrics { get; set; }
+    public DbSet<ThirdPartyIntegration> ThirdPartyIntegrations { get; set; }
+    public DbSet<IntegrationSyncLog> IntegrationSyncLogs { get; set; }
+    public DbSet<ExternalWorkout> ExternalWorkouts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -94,6 +97,63 @@ public class PplCoachDbContext(DbContextOptions<PplCoachDbContext> options) : Db
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ThirdPartyIntegration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExternalUserId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.AccessToken).IsRequired();
+            entity.Property(e => e.RefreshToken);
+            entity.Property(e => e.SyncCursor);
+            entity.Property(e => e.Metadata)
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new());
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.SyncLogs)
+                .WithOne(e => e.Integration)
+                .HasForeignKey(e => e.IntegrationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.Type }).IsUnique();
+        });
+
+        modelBuilder.Entity<IntegrationSyncLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ErrorMessage);
+            entity.Property(e => e.SyncCursor);
+            entity.Property(e => e.Metadata)
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new());
+        });
+
+        modelBuilder.Entity<ExternalWorkout>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExternalId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description);
+            entity.Property(e => e.ActivityType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.CaloriesBurned).HasPrecision(8, 2);
+            entity.Property(e => e.DistanceMeters).HasPrecision(10, 2);
+            entity.Property(e => e.RawData)
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new());
+            entity.HasOne(e => e.Integration)
+                .WithMany()
+                .HasForeignKey(e => e.IntegrationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ImportedSession)
+                .WithMany()
+                .HasForeignKey(e => e.ImportedSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => new { e.IntegrationId, e.ExternalId }).IsUnique();
         });
 
         base.OnModelCreating(modelBuilder);

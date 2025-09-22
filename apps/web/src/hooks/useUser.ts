@@ -26,6 +26,10 @@ export function useUser() {
     query: {
       retry: false,
       enabled: !!storedUserId,
+      staleTime: 5 * 60 * 1000, // 5 minutes - profile data doesn't change often
+      cacheTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      refetchOnMount: false, // Don't refetch when component mounts if data exists
     }
   })
 

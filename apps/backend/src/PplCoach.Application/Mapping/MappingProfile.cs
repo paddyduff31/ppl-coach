@@ -1,5 +1,6 @@
 using AutoMapper;
 using PplCoach.Application.DTOs;
+using PplCoach.Application.DTOs.Integrations;
 using PplCoach.Domain.Entities;
 
 namespace PplCoach.Application.Mapping;
@@ -28,5 +29,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Session, opt => opt.Ignore())
             .ForMember(dest => dest.Movement, opt => opt.Ignore());
+
+        // Integration mappings
+        CreateMap<ThirdPartyIntegration, IntegrationDto>();
+        CreateMap<IntegrationSyncLog, IntegrationSyncDto>();
     }
 }

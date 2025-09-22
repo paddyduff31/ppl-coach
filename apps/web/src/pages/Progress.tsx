@@ -137,28 +137,32 @@ export default function Progress() {
               </Link>
             </div>
 
-            {/* Preview Features */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-2xl p-6 text-center border border-gray-200/50">
-                <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Trophy className="h-6 w-6 text-gray-600" />
-                </div>
-                <h3 className="font-semibold mb-2">Personal Records</h3>
-                <p className="text-sm text-gray-500">Track your best lifts and celebrate new PRs</p>
+            {/* Coming Soon Features - Clean and Simple */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 border border-gray-200">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Coming Soon</h3>
+                <p className="text-sm text-gray-600">Advanced analytics unlock after your first few workouts</p>
               </div>
-              <div className="bg-white rounded-2xl p-6 text-center border border-gray-200/50">
-                <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <TrendUp className="h-6 w-6 text-gray-600" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                    <Trophy className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Personal Records</span>
                 </div>
-                <h3 className="font-semibold mb-2">Strength Progression</h3>
-                <p className="text-sm text-gray-500">Visualize your gains over time with clean charts</p>
-              </div>
-              <div className="bg-white rounded-2xl p-6 text-center border border-gray-200/50">
-                <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Barbell className="h-6 w-6 text-gray-600" />
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                    <TrendUp className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Strength Charts</span>
                 </div>
-                <h3 className="font-semibold mb-2">Volume Analysis</h3>
-                <p className="text-sm text-gray-500">Optimize your training volume per muscle group</p>
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                    <Barbell className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Volume Analysis</span>
+                </div>
               </div>
             </div>
           </div>

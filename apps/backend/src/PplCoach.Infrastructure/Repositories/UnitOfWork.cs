@@ -5,9 +5,8 @@ using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Repositories;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(PplCoachDbContext context) : IUnitOfWork
 {
-    private readonly PplCoachDbContext _context;
     private IDbContextTransaction? _transaction;
     private bool _disposed;
 
@@ -15,33 +14,40 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Movement>? _movements;
     private IRepository<WorkoutSession>? _workoutSessions;
     private IRepository<SetLog>? _setLogs;
-
-    public UnitOfWork(PplCoachDbContext context)
-    {
-        _context = context;
-    }
+    private IRepository<ThirdPartyIntegration>? _thirdPartyIntegrations;
+    private IRepository<IntegrationSyncLog>? _integrationSyncLogs;
+    private IRepository<ExternalWorkout>? _externalWorkouts;
 
     public IRepository<UserProfile> UserProfiles =>
-        _userProfiles ??= new Repository<UserProfile>(_context);
+        _userProfiles ??= new Repository<UserProfile>(context);
 
     public IRepository<Movement> Movements =>
-        _movements ??= new Repository<Movement>(_context);
+        _movements ??= new Repository<Movement>(context);
 
     public IRepository<WorkoutSession> WorkoutSessions =>
-        _workoutSessions ??= new Repository<WorkoutSession>(_context);
+        _workoutSessions ??= new Repository<WorkoutSession>(context);
 
     public IRepository<SetLog> SetLogs =>
-        _setLogs ??= new Repository<SetLog>(_context);
+        _setLogs ??= new Repository<SetLog>(context);
+
+    public IRepository<ThirdPartyIntegration> ThirdPartyIntegrations =>
+        _thirdPartyIntegrations ??= new Repository<ThirdPartyIntegration>(context);
+
+    public IRepository<IntegrationSyncLog> IntegrationSyncLogs =>
+        _integrationSyncLogs ??= new Repository<IntegrationSyncLog>(context);
+
+    public IRepository<ExternalWorkout> ExternalWorkouts =>
+        _externalWorkouts ??= new Repository<ExternalWorkout>(context);
 
 
     public async Task<int> SaveChangesAsync()
     {
-        return await _context.SaveChangesAsync();
+        return await context.SaveChangesAsync();
     }
 
     public async Task BeginTransactionAsync()
     {
-        _transaction = await _context.Database.BeginTransactionAsync();
+        _transaction = await context.Database.BeginTransactionAsync();
     }
 
     public async Task CommitTransactionAsync()
@@ -75,7 +81,7 @@ public class UnitOfWork : IUnitOfWork
         if (!_disposed && disposing)
         {
             _transaction?.Dispose();
-            _context.Dispose();
+            context.Dispose();
         }
         _disposed = true;
     }

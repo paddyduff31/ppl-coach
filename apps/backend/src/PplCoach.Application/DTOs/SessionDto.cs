@@ -35,19 +35,20 @@ public class CreateSessionDto
     public string? Notes { get; set; }
 }
 
-public record SetLogDto(
-    Guid Id,
-    Guid SessionId,
-    Guid MovementId,
-    int SetIndex,
-    decimal WeightKg,
-    int Reps,
-    decimal? RPE,
-    string? Tempo,
-    string? Notes,
-    DateTime CreatedAt,
-    string? MovementName
-);
+public class SetLogDto
+{
+    public Guid Id { get; set; }
+    public Guid SessionId { get; set; }
+    public Guid MovementId { get; set; }
+    public int SetIndex { get; set; }
+    public decimal WeightKg { get; set; }
+    public int Reps { get; set; }
+    public decimal? RPE { get; set; }
+    public string? Tempo { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? MovementName { get; set; }
+}
 
 public class CreateSetLogDto
 {

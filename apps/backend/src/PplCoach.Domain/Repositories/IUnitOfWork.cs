@@ -20,6 +20,9 @@ public interface IUnitOfWork : IDisposable
     IRepository<Movement> Movements { get; }
     IRepository<WorkoutSession> WorkoutSessions { get; }
     IRepository<SetLog> SetLogs { get; }
+    IRepository<ThirdPartyIntegration> ThirdPartyIntegrations { get; }
+    IRepository<IntegrationSyncLog> IntegrationSyncLogs { get; }
+    IRepository<ExternalWorkout> ExternalWorkouts { get; }
 
     Task<int> SaveChangesAsync();
 }
