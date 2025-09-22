@@ -1,16 +1,17 @@
 import { RouterProvider } from '@tanstack/react-router'
-import { QueryClientProvider } from '@ppl-coach/api-client'
+import { APIProvider } from '@ppl-coach/api-client'
 import { Toaster } from 'sonner'
 import { router } from './app/router'
-import { queryClient } from './app/queryClient'
 import './App.css'
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <Toaster position="top-right" />
-    </QueryClientProvider>
+    <APIProvider enablePersistence={true}>
+      <div className="min-h-screen bg-background">
+        <RouterProvider router={router} />
+        <Toaster position="top-right" />
+      </div>
+    </APIProvider>
   )
 }
 

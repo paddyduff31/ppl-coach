@@ -1,6 +1,6 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client-core';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createOptimizedQueryClient, createQueryPersister } from '../utils/query';
 
 // Conditional import for React Query DevTools (web only)
@@ -61,8 +61,10 @@ export function APIProvider({
     return (
       <PersistQueryClientProvider
         client={client}
-        persister={persister}
-        maxAge={1000 * 60 * 60 * 24} // 24 hours
+        persistOptions={{
+          persister,
+          maxAge: 1000 * 60 * 60 * 24, // 24 hours
+        }}
         onSuccess={() => {
           // Resume paused mutations and invalidate stale queries after restoration
           client.resumePausedMutations().then(() => {
@@ -71,8 +73,8 @@ export function APIProvider({
             });
           });
         }}
-        onError={(error) => {
-          console.warn('Query persistence failed:', error);
+        onError={() => {
+          console.warn('Query persistence failed');
           // Continue without persistence rather than breaking the app
         }}
       >

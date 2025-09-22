@@ -25,13 +25,13 @@ const rootRoute = createRootRoute({
     useGlobalShortcuts() // Enable global keyboard shortcuts
 
     return (
-      <div className="min-h-screen bg-background">
+      <>
         <Navigation />
         <PageErrorBoundary>
           <Outlet />
         </PageErrorBoundary>
         <GlobalShortcuts />
-      </div>
+      </>
     )
   },
 })
