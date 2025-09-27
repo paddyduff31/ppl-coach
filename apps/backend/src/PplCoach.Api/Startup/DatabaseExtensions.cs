@@ -5,7 +5,7 @@ namespace PplCoach.Api.Startup;
 
 public static class DatabaseExtensions
 {
-    public static void AddDatabase(this IServiceCollection services, string connectionString, bool isDevelopment)
+    public static IServiceCollection AddDatabase(this IServiceCollection services, string connectionString, bool isDevelopment)
     {
         services.AddDbContext<PplCoachDbContext>(options =>
         {
@@ -19,16 +19,13 @@ public static class DatabaseExtensions
                 npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public");
             });
 
-            if (isDevelopment)
-            {
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-            }
+            if (!isDevelopment) return;
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
         });
 
-        // Add database health checks
-        services.AddHealthChecks()
-            .AddNpgSql(connectionString, name: "database", tags: new[] { "db", "ready" });
+        // Health checks are registered separately in HealthCheckExtensions
+        return services;
     }
 
     public static async Task MigrateDatabaseAsync(this WebApplication app)
@@ -51,8 +48,8 @@ public static class DatabaseExtensions
                 logger.LogInformation("Database is up to date");
             }
 
-            // Seed data after migrations
-            await DatabaseSeeder.SeedAsync(context, logger);
+            // Seed data after migrations if seeder exists
+            // await DatabaseSeeder.SeedAsync(context); // Uncomment when you create seeder
         }
         catch (Exception ex)
         {

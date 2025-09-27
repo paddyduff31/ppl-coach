@@ -19,7 +19,7 @@ public static class RateLimitingExtensions
 
             options.AddFixedWindowLimiter("auth", limiterOptions =>
             {
-                limiterOptions.PermitLimit = 5;
+                limiterOptions.PermitLimit = 10;
                 limiterOptions.Window = TimeSpan.FromMinutes(1);
             });
         });

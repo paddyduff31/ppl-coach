@@ -9,7 +9,7 @@ public static class MiddlewareExtensions
     {
         app.UseSerilogRequestLogging();
         app.UseCors(); // CORS must be early in the pipeline
-        app.UseMiddleware<GlobalExceptionMiddleware>();
+        // Removed complex middleware - using simple built-in exception handling
         app.UseMiddleware<PerformanceMiddleware>();
         app.UseRateLimiter();
         app.UseOutputCache();

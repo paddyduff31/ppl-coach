@@ -8,7 +8,7 @@ namespace PplCoach.Api.Startup;
 
 public static class ServiceExtensions
 {
-    public static void AddBusinessServices(this IServiceCollection services)
+    public static IServiceCollection AddBusinessServices(this IServiceCollection services)
     {
         // Add repositories and services
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -19,12 +19,16 @@ public static class ServiceExtensions
         services.AddScoped<IIntegrationService, IntegrationService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IWebhookService, WebhookService>();
+
+        return services;
     }
 
-    public static void AddExternalServices(this IServiceCollection services)
+    public static IServiceCollection AddExternalServices(this IServiceCollection services)
     {
         // Add HTTP clients for third-party services
         services.AddHttpClient<StravaService>();
         services.AddHttpClient<MyFitnessPalService>();
+
+        return services;
     }
 }

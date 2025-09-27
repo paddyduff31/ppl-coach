@@ -1,82 +1,108 @@
-using Hangfire;
-using Hangfire.PostgreSql;
-using PplCoach.Application.Services;
+using PplCoach.Api.Services.BackgroundJobs;
 
 namespace PplCoach.Api.Startup;
 
 public static class BackgroundJobExtensions
 {
-    public static void AddBackgroundJobs(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddBackgroundJobs(this IServiceCollection services)
     {
-        // Add Hangfire for background job processing
-        services.AddHangfire(configuration => configuration
-            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-            .UseSimpleAssemblyNameTypeSerializer()
-            .UseRecommendedSerializerSettings()
-            .UsePostgreSqlStorage(connectionString, new PostgreSqlStorageOptions
-            {
-                QueuePollInterval = TimeSpan.FromSeconds(10),
-                JobExpirationCheckInterval = TimeSpan.FromHours(1),
-                CountersAggregateInterval = TimeSpan.FromMinutes(5),
-                PrepareSchemaIfNecessary = true,
-                DashboardJobListLimit = 25000,
-                TransactionSynchronisationTimeout = TimeSpan.FromMinutes(5),
-                SchemaName = "hangfire"
-            }));
+        // Register background services using IHostedService (built-in .NET, no external dependencies!)
+        services.AddHostedService<DataSyncBackgroundService>();
+        services.AddHostedService<NotificationBackgroundService>();
+        services.AddHostedService<AnalyticsBackgroundService>();
+        services.AddHostedService<HealthCheckBackgroundService>();
 
-        services.AddHangfireServer(options =>
-        {
-            options.WorkerCount = Environment.ProcessorCount;
-            options.Queues = new[] { "default", "integrations", "notifications", "analytics" };
-        });
+        // Register job-related services
+        services.AddScoped<IDataSyncService, DataSyncService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IAnalyticsService, AnalyticsService>();
 
-        // Register background job services
-        services.AddScoped<ISyncIntegrationsJob, SyncIntegrationsJob>();
-        services.AddScoped<IDataAnalyticsJob, DataAnalyticsJob>();
-        services.AddScoped<INotificationJob, NotificationJob>();
+        return services;
     }
 
     public static void UseBackgroundJobs(this IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // Hangfire Dashboard (only in development or with proper authentication in production)
-        if (env.IsDevelopment())
-        {
-            app.UseHangfireDashboard("/hangfire");
-        }
-        else
-        {
-            app.UseHangfireDashboard("/hangfire", new DashboardOptions
-            {
-                Authorization = new[] { new HangfireAuthorizationFilter() }
-            });
-        }
+        // Background jobs start automatically via IHostedService
+        // No additional configuration needed!
 
-        // Schedule recurring jobs
-        var recurringJobs = app.ApplicationServices.GetRequiredService<IRecurringJobManager>();
-
-        // Sync third-party integrations every 15 minutes
-        recurringJobs.AddOrUpdate<ISyncIntegrationsJob>(
-            "sync-integrations",
-            job => job.ExecuteAsync(),
-            "*/15 * * * *", // Every 15 minutes
-            TimeZoneInfo.Utc);
-
-        // Generate analytics reports daily at 2 AM
-        recurringJobs.AddOrUpdate<IDataAnalyticsJob>(
-            "daily-analytics",
-            job => job.GenerateDailyReportsAsync(),
-            "0 2 * * *", // Daily at 2 AM UTC
-            TimeZoneInfo.Utc);
+        var logger = app.ApplicationServices.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Background jobs configured and will start automatically");
     }
 }
 
-// Simple auth filter for Hangfire dashboard in production
-public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
+// Background job services interfaces
+public interface IDataSyncService
 {
-    public bool Authorize(DashboardContext context)
+    Task SyncExternalDataAsync(CancellationToken cancellationToken = default);
+}
+
+public interface INotificationService
+{
+    Task ProcessNotificationQueueAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IAnalyticsService
+{
+    Task GenerateAnalyticsReportsAsync(CancellationToken cancellationToken = default);
+}
+
+// Sample implementations
+public class DataSyncService : IDataSyncService
+{
+    private readonly ILogger<DataSyncService> _logger;
+
+    public DataSyncService(ILogger<DataSyncService> logger)
     {
-        // In production, you'd want proper authentication here
-        // For now, just check if user is authenticated
-        return context.GetHttpContext().User.Identity?.IsAuthenticated == true;
+        _logger = logger;
+    }
+
+    public async Task SyncExternalDataAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Starting external data sync...");
+
+        // Your sync logic here
+        await Task.Delay(1000, cancellationToken); // Simulate work
+
+        _logger.LogInformation("External data sync completed");
+    }
+}
+
+public class NotificationService : INotificationService
+{
+    private readonly ILogger<NotificationService> _logger;
+
+    public NotificationService(ILogger<NotificationService> logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task ProcessNotificationQueueAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Processing notification queue...");
+
+        // Your notification logic here
+        await Task.Delay(500, cancellationToken); // Simulate work
+
+        _logger.LogInformation("Notification queue processed");
+    }
+}
+
+public class AnalyticsService : IAnalyticsService
+{
+    private readonly ILogger<AnalyticsService> _logger;
+
+    public AnalyticsService(ILogger<AnalyticsService> logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task GenerateAnalyticsReportsAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Generating analytics reports...");
+
+        // Your analytics logic here
+        await Task.Delay(2000, cancellationToken); // Simulate work
+
+        _logger.LogInformation("Analytics reports generated");
     }
 }

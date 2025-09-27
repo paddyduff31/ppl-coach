@@ -1,77 +1,120 @@
+// 🚀 PPL COACH API - OOTB MICROSOFT STACK 🚀
+// Maximum use of built-in .NET features, minimal custom code
+
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using PplCoach.Api.Startup;
 using PplCoach.Api.Middleware;
 using PplCoach.Api.Hubs;
 using Serilog;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .WriteTo.Console()
-    .CreateLogger();
+// ⚙️ CONFIGURATION & VALIDATION - Built-in options validation
+builder.Services.AddConfigurationValidation(builder.Configuration);
+var connectionString = builder.Configuration.GetConnectionString();
 
-builder.Host.UseSerilog();
+// 📝 LOGGING - Built-in Serilog integration
+builder.Host.UseSerilog((context, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .Enrich.FromLogContext()
+          .Enrich.WithProperty("Application", "PplCoach.Api")
+          .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName));
 
-// Get connection string
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ??
-    builder.Configuration.GetConnectionString("DefaultConnection") ??
-    "Host=localhost;Database=ppl_dev;Username=ppl;Password=ppl_password";
+// 🔗 FLUENT SERVICE REGISTRATION - Method chaining for cleaner code
+builder.Services
+    .AddControllers()
+    .Services
+    .AddCustomApiVersioning()
+    .AddSwaggerDocumentation()
 
-// Add all services using extension methods - ENTERPRISE LEVEL! 🚀
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddApiVersioningAndSwagger();
-builder.Services.AddDatabase(connectionString, builder.Environment.IsDevelopment());
-builder.Services.AddBusinessServices();
-builder.Services.AddExternalServices();
-builder.Services.AddValidationServices();
-builder.Services.AddCustomCors();
-builder.Services.AddCustomHealthChecks(connectionString);
-builder.Services.AddCustomRateLimiting();
-builder.Services.AddCustomCaching();
+    // Data & Persistence - chained together
+    .AddDatabase(connectionString, builder.Environment.IsDevelopment())
+    .AddCustomHealthChecks(connectionString)
+    .AddCustomCaching()
 
-// NEW ENTERPRISE FEATURES 🔥
-builder.Services.AddObservability(builder.Configuration);
-builder.Services.AddJwtAuthentication(builder.Configuration);
-builder.Services.AddSecurityHeaders();
-builder.Services.AddBackgroundJobs(connectionString);
-builder.Services.AddResiliencePatterns();
-builder.Services.AddSignalR();
+    // Application Services - all business logic
+    .AddBusinessServices()
+    .AddExternalServices()
+    .AddValidationServices()
+
+    // Web Services - HTTP concerns
+    .AddCustomCors(builder.Configuration)
+    .AddCustomRateLimiting();
+
+// Continue the service chain
+builder.Services
+    // Security - authentication and authorization
+    .AddJwtAuthentication(builder.Configuration)
+    .AddSecurityHeaders()
+
+    // Background Processing - use OOTB IHostedService
+    .AddBackgroundJobs()
+
+    // HTTP Clients with built-in resilience
+    .AddHttpClients();
+
+// SignalR with JSON protocol
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+        options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+
+// 📊 OPTIONAL - Only add observability if configured
+if (builder.Configuration.GetValue<bool>("Observability:Enabled"))
+    builder.Services.AddObservability(builder.Configuration);
 
 var app = builder.Build();
 
-// Set service provider for resilience patterns
-ResilienceExtensions.SetServiceProvider(app.Services);
-
-// Configure the HTTP request pipeline - PRODUCTION READY! ✨
-app.ConfigureDevelopmentEnvironment();
-
-// Apply database migrations (production-ready approach)
-await app.MigrateDatabaseAsync();
-
-// Add global exception handling
-app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-
-// Add observability and security
-app.UseObservability();
-app.UseSecurityHeaders(app.Environment);
-
-app.ConfigureMiddleware();
-
-// Background jobs
-app.UseBackgroundJobs(app.Environment);
-
-// Health checks with detailed responses
-app.MapHealthChecks("/health").RequireCors();
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
+// ⚡ OOTB MIDDLEWARE PIPELINE - Clean and simple
+try
 {
-    Predicate = check => check.Tags.Contains("ready")
-});
+    // Development tools
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage()
+           .UseSwaggerDocumentation();
+    }
 
-// SignalR hubs
-app.MapHub<WorkoutHub>("/hubs/workout");
+    // Database initialization
+    await app.MigrateDatabaseAsync();
 
-// Map all endpoints
-app.MapAllEndpoints();
+    // Built-in middleware chain
+    app.UseMiddleware<GlobalExceptionHandlingMiddleware>()
+       .UseSecurityHeaders(app.Environment)
+       .UseSerilogRequestLogging()
+       .UseCors("AllowWebFrontend")
+       .UseRateLimiter()
+       .UseOutputCache()
+       .UseAuthentication()
+       .UseAuthorization();
 
-app.Run();
+    // Optional observability
+    if (app.Configuration.GetValue<bool>("Observability:Enabled"))
+        app.UseObservability();
+
+    // Application endpoints
+    app.UseHealthCheckEndpoints()
+       .UseBackgroundJobs(app.Environment);
+
+    // API endpoints with security
+    app.MapHub<WorkoutHub>("/hubs/workout").RequireAuthorization();
+    app.MapControllers();
+
+    // Success logging
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("🚀 PPL Coach API started in {Environment} mode!", app.Environment.EnvironmentName);
+
+    if (app.Environment.IsDevelopment())
+        logger.LogInformation("📚 Documentation: https://localhost:7001/api/docs");
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "💥 Startup failed!");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

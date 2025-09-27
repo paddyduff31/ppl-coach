@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using FluentValidation;
 using PplCoach.Domain.Exceptions;
 
 namespace PplCoach.Api.Middleware;

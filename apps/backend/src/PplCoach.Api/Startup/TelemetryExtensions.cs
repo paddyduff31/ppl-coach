@@ -8,7 +8,7 @@ namespace PplCoach.Api.Startup;
 
 public static class TelemetryExtensions
 {
-    public static void AddObservability(this IServiceCollection services, IConfiguration configuration, string serviceName = "ppl-coach-api")
+    public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration, string serviceName = "ppl-coach-api")
     {
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
@@ -16,7 +16,8 @@ public static class TelemetryExtensions
                 .AddAttributes(new[]
                 {
                     new KeyValuePair<string, object>("service.version", "1.0.0"),
-                    new KeyValuePair<string, object>("deployment.environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "development")
+                    new KeyValuePair<string, object>("deployment.environment",
+                        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "development")
                 }))
             .WithTracing(tracing => tracing
                 .AddAspNetCoreInstrumentation(options =>
@@ -40,6 +41,8 @@ public static class TelemetryExtensions
 
         // Add custom activity source for business operations
         services.AddSingleton(new ActivitySource(serviceName));
+
+        return services;
     }
 
     public static void UseObservability(this IApplicationBuilder app)
@@ -50,7 +53,7 @@ public static class TelemetryExtensions
             var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault()
                 ?? Guid.NewGuid().ToString();
 
-            context.Response.Headers.Add("X-Correlation-ID", correlationId);
+            context.Response.Headers["X-Correlation-ID"] = correlationId;
 
             using (Activity.Current?.SetTag("correlation.id", correlationId))
             {
