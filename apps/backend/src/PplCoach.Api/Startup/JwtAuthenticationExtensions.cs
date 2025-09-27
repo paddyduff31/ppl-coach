@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using PplCoach.Api.Configuration;
+using PplCoach.Api.Configuration.Settings;
 
 namespace PplCoach.Api.Startup;
 
@@ -8,13 +10,10 @@ public static class JwtAuthenticationExtensions
 {
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var jwtSettings = configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET") ??
-            "SuperSecretKeyThatShouldBeStoredInEnvironmentVariablesAndBeAtLeast256BitsLong!";
-        var issuer = jwtSettings["Issuer"] ?? "PplCoachApi";
-        var audience = jwtSettings["Audience"] ?? "PplCoachClient";
+        // Use the sexy new configuration pattern that validates and returns settings
+        var jwtSettings = services.AddValidatedConfiguration<JwtSettings>(configuration);
 
-        var key = Encoding.ASCII.GetBytes(secretKey);
+        var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 
         services.AddAuthentication(options =>
         {
@@ -23,16 +22,16 @@ public static class JwtAuthenticationExtensions
         })
         .AddJwtBearer(options =>
         {
-            options.RequireHttpsMetadata = false; // Set to true in production
+            options.RequireHttpsMetadata = jwtSettings.RequireHttpsMetadata;
             options.SaveToken = true;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = true,
-                ValidIssuer = issuer,
+                ValidIssuer = jwtSettings.Issuer,
                 ValidateAudience = true,
-                ValidAudience = audience,
+                ValidAudience = jwtSettings.Audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero // Remove delay of token when expire
             };

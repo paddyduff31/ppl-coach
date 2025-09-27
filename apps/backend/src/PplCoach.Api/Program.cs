@@ -3,6 +3,7 @@
 
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using PplCoach.Api.Startup;
+using PplCoach.Api.Configuration;
 using PplCoach.Api.Middleware;
 using PplCoach.Api.Hubs;
 using Serilog;
@@ -10,8 +11,8 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ⚙️ CONFIGURATION & VALIDATION - Built-in options validation
-builder.Services.AddConfigurationValidation(builder.Configuration);
+// ⚙️ CONFIGURATION & VALIDATION - One method to rule them all! 🔥
+builder.Services.AddAllConfiguration(builder.Configuration);
 var connectionString = builder.Configuration.GetConnectionString();
 
 // 📝 LOGGING - Built-in Serilog integration
@@ -60,8 +61,7 @@ builder.Services.AddSignalR()
         options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 // 📊 OPTIONAL - Only add observability if configured
-if (builder.Configuration.GetValue<bool>("Observability:Enabled"))
-    builder.Services.AddObservability(builder.Configuration);
+builder.Services.AddObservability(builder.Configuration);
 
 var app = builder.Build();
 
@@ -86,11 +86,8 @@ try
        .UseRateLimiter()
        .UseOutputCache()
        .UseAuthentication()
-       .UseAuthorization();
-
-    // Optional observability
-    if (app.Configuration.GetValue<bool>("Observability:Enabled"))
-        app.UseObservability();
+       .UseAuthorization()
+       .UseObservability();
 
     // Application endpoints
     app.UseHealthCheckEndpoints()

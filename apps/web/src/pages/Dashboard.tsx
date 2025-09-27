@@ -65,7 +65,7 @@ export default function Dashboard() {
                 userId: user.id,
                 date: new Date().toISOString().split('T')[0],
                 dayType: nextDayType,
-                notes: `${nextDayName} day workout`
+                notes: `${nextDayName || 'Push'} day workout`
             })
 
             // Navigate to session - exercises will be auto-loaded there
@@ -135,11 +135,11 @@ export default function Dashboard() {
                     `bg-gradient-to-r ${DAY_TYPE_COLORS[nextDayType].replace('/20', '')}`
                   )} />
                   <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    {nextDayName} Day Ready
+                    {nextDayName || 'Push'} Day Ready
                   </span>
                 </div>
                 <h1 className="text-5xl font-semibold tracking-tight text-gray-900 mb-4">
-                  Ready for {nextDayName}?
+                  Ready for {nextDayName || 'Push'}?
                 </h1>
                 <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
                   {totalSessions === 0
@@ -163,7 +163,7 @@ export default function Dashboard() {
                     ) : (
                       <div className="flex items-center gap-4">
                         <Play className="h-6 w-6" />
-                        Start {nextDayName} Workout
+                        Start {nextDayName || 'Push'} Workout
                         {lastWorkout && (
                           <span className="text-sm opacity-75">
                             Last: {new Date(lastWorkout.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -253,7 +253,7 @@ export default function Dashboard() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Plan Your Workout</h3>
                 <p className="text-gray-500">
-                  Customize your next {nextDayName.toLowerCase()} day session
+                  Customize your next {nextDayName?.toLowerCase() || 'push'} day session
                 </p>
               </div>
             </Link>

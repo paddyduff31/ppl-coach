@@ -4,7 +4,6 @@ public static class HttpClientsExtensions
 {
     public static IServiceCollection AddHttpClients(this IServiceCollection services)
     {
-        // Use Microsoft's built-in HttpClientFactory - OOTB and simple
         services.AddHttpClient("default", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
