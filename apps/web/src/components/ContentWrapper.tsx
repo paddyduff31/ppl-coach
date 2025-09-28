@@ -33,15 +33,15 @@ export function ContentWrapper({ children }: ContentWrapperProps) {
     <div
       className={cn(
         "transition-all duration-300 h-screen pb-20 lg:pb-0",
-        shouldShowRoundedContent ? "lg:pl-72 lg:p-3" : "lg:pl-0"
+        shouldShowRoundedContent ? "lg:pl-72 lg:pr-3 lg:pt-3 lg:pb-3" : "lg:pl-0"
       )}
       style={{
         backgroundColor: shouldShowRoundedContent ? '#f3f4f6' : 'white'
       }}
     >
       {shouldShowRoundedContent ? (
-        <div className="h-full bg-white rounded-2xl shadow-sm relative">
-          <div className="h-full overflow-y-auto p-6">
+        <div className="h-full bg-white rounded-r-2xl rounded-l-none shadow-sm relative">
+          <div className="h-full overflow-y-auto scrollbar-hide p-6">
             {children}
           </div>
         </div>
