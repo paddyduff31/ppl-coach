@@ -40,8 +40,8 @@ export function ContentWrapper({ children }: ContentWrapperProps) {
       }}
     >
       {shouldShowRoundedContent ? (
-        <div className="h-full bg-white rounded-r-2xl rounded-l-none shadow-sm relative">
-          <div className="h-full overflow-y-auto scrollbar-hide p-6">
+        <div className="h-full bg-white rounded-2xl shadow-sm relative ml-3">
+          <div className="h-full overflow-y-scroll p-6 no-scrollbar">
             {children}
           </div>
         </div>
