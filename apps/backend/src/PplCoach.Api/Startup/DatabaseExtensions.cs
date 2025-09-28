@@ -49,7 +49,7 @@ public static class DatabaseExtensions
             }
 
             // Seed data after migrations if seeder exists
-            // await DatabaseSeeder.SeedAsync(context); // Uncomment when you create seeder
+            await DatabaseSeeder.SeedAsync(context);
         }
         catch (Exception ex)
         {

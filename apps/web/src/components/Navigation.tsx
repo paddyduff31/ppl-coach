@@ -13,23 +13,24 @@ import {
   CalendarCheck,
   Calendar,
   Plugs,
-  List,
-  X
+  MagnifyingGlass,
+  Sparkle,
+  DotsSixVertical
 } from '@phosphor-icons/react'
 import { cn } from '../utils/utils'
 import { useWorkoutPlan } from '../hooks/useWorkoutPlan'
 import { useAuth } from '../hooks/useAuth'
 import { useCreateSession } from '../hooks/useSession'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: House, shortcut: 'H' },
-  { name: 'Calendar', href: '/calendar', icon: Calendar, shortcut: 'C' },
-  { name: 'Workouts', href: '/plan', icon: CalendarCheck, shortcut: 'W' },
-  { name: 'Exercises', href: '/movements', icon: Barbell, shortcut: 'E' },
-  { name: 'History', href: '/history', icon: Clock, shortcut: 'Y' },
-  { name: 'Progress', href: '/progress', icon: ChartLine, shortcut: 'P' },
+const defaultNavigation = [
+  { id: 'home', name: 'Home', href: '/', icon: House, shortcut: 'H' },
+  { id: 'calendar', name: 'Calendar', href: '/calendar', icon: Calendar, shortcut: 'C' },
+  { id: 'workouts', name: 'Workouts', href: '/plan', icon: CalendarCheck, shortcut: 'W' },
+  { id: 'exercises', name: 'Exercises', href: '/movements', icon: Barbell, shortcut: 'E' },
+  { id: 'history', name: 'History', href: '/history', icon: Clock, shortcut: 'Y' },
+  { id: 'progress', name: 'Progress', href: '/progress', icon: ChartLine, shortcut: 'P' },
 ]
 
 export function Navigation() {
@@ -37,7 +38,27 @@ export function Navigation() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const createSessionMutation = useCreateSession()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Arc-style states with localStorage persistence
+  const [isHidden, setIsHidden] = useState(() => {
+    const saved = localStorage.getItem('ppl-coach-sidebar-hidden')
+    return saved ? JSON.parse(saved) : false
+  })
+  const [isFloating, setIsFloating] = useState(false)
+  const [isDocked, setIsDocked] = useState(() => {
+    const saved = localStorage.getItem('ppl-coach-sidebar-docked')
+    return saved ? JSON.parse(saved) : true
+  })
+  const [draggedItem, setDraggedItem] = useState<any>(null)
+  const [navigation, setNavigation] = useState(() => {
+    const saved = localStorage.getItem('ppl-coach-navigation-order')
+    return saved ? JSON.parse(saved) : defaultNavigation
+  })
+
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  const hoverZoneRef = useRef<HTMLDivElement>(null)
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const {
     nextDayType,
     nextDayName,
@@ -45,11 +66,89 @@ export function Navigation() {
     isTodayComplete
   } = useWorkoutPlan()
 
+  // Emit initial state
+  useEffect(() => {
+    emitSidebarState(isHidden, isFloating, isDocked)
+  }, [])
+
+  // Handle mouse hover for floating sidebar
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isHidden && !isFloating) {
+        // Show floating sidebar when hovering near left edge
+        if (e.clientX <= 10) {
+          setIsFloating(true)
+        }
+      }
+    }
+
+    const handleMouseLeave = () => {
+      if (isFloating && !isDocked) {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setIsFloating(false)
+        }, 300)
+      }
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+
+    if (sidebarRef.current) {
+      sidebarRef.current.addEventListener('mouseleave', handleMouseLeave)
+      sidebarRef.current.addEventListener('mouseenter', () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current)
+        }
+      })
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+      }
+    }
+  }, [isHidden, isFloating, isDocked])
+
+  const emitSidebarState = (hidden: boolean, floating: boolean, docked: boolean) => {
+    const event = new CustomEvent('sidebar-state-change', {
+      detail: { isHidden: hidden, isFloating: floating, isDocked: docked }
+    })
+    window.dispatchEvent(event)
+  }
+
+  const toggleSidebar = () => {
+    if (isHidden) {
+      // Show and dock
+      setIsHidden(false)
+      setIsFloating(false)
+      setIsDocked(true)
+      localStorage.setItem('ppl-coach-sidebar-hidden', 'false')
+      localStorage.setItem('ppl-coach-sidebar-docked', 'true')
+      emitSidebarState(false, false, true)
+    } else {
+      // Hide completely
+      setIsHidden(true)
+      setIsFloating(false)
+      setIsDocked(false)
+      localStorage.setItem('ppl-coach-sidebar-hidden', 'true')
+      localStorage.setItem('ppl-coach-sidebar-docked', 'false')
+      emitSidebarState(true, false, false)
+    }
+  }
+
+  const dockSidebar = () => {
+    setIsHidden(false)
+    setIsFloating(false)
+    setIsDocked(true)
+    localStorage.setItem('ppl-coach-sidebar-hidden', 'false')
+    localStorage.setItem('ppl-coach-sidebar-docked', 'true')
+    emitSidebarState(false, false, true)
+  }
+
   const startNextWorkout = async () => {
     if (!user?.id) return
 
     try {
-      // Create the session
       const session = await createSessionMutation.mutateAsync({
         userId: user.id,
         date: new Date().toISOString().split('T')[0],
@@ -57,11 +156,9 @@ export function Navigation() {
         notes: `${nextDayName} day workout`
       })
 
-      // Navigate directly to the workout session
       navigate({ to: '/log/$id', params: { id: session.data.id } })
     } catch (error) {
       console.error('Failed to start workout:', error)
-      // Fallback to workouts page if session creation fails
       navigate({ to: '/plan' })
     }
   }
@@ -73,263 +170,212 @@ export function Navigation() {
     }
 
     if (isTodayComplete) {
-      // If today's workout is complete, go to workouts page
       navigate({ to: '/plan' })
     } else {
-      // Start the specific workout for today
       startNextWorkout()
     }
   }
 
+  // Drag and drop for reordering
+  const handleDragStart = (e: React.DragEvent, item: any) => {
+    setDraggedItem(item)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (e: React.DragEvent, targetItem: any) => {
+    e.preventDefault()
+    if (!draggedItem || draggedItem.id === targetItem.id) return
+
+    const newNavigation = [...navigation]
+    const draggedIndex = newNavigation.findIndex(item => item.id === draggedItem.id)
+    const targetIndex = newNavigation.findIndex(item => item.id === targetItem.id)
+
+    newNavigation.splice(draggedIndex, 1)
+    newNavigation.splice(targetIndex, 0, draggedItem)
+
+    setNavigation(newNavigation)
+    localStorage.setItem('ppl-coach-navigation-order', JSON.stringify(newNavigation))
+    setDraggedItem(null)
+  }
+
+  const shouldShowSidebar = !isHidden || isFloating
+
   return (
     <>
-      {/* Desktop Sidebar Navigation */}
-      <div className="hidden lg:block fixed left-0 top-0 z-50 h-screen w-16 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center justify-center h-16 group relative"
+      {/* Hover Zone for Arc-style reveal */}
+      {isHidden && (
+        <div
+          ref={hoverZoneRef}
+          className="fixed top-0 left-0 w-4 h-full z-40"
+        />
+      )}
+
+      {/* Arc-style Sidebar */}
+      {shouldShowSidebar && (
+        <div
+          ref={sidebarRef}
+          className={cn(
+            "fixed z-50 w-72 bg-gray-100 transition-all duration-300 ease-out",
+            isFloating
+              ? "top-3 left-3 bottom-3 rounded-2xl shadow-2xl border border-gray-200/50"
+              : isDocked
+              ? "top-0 left-0 h-screen border-r border-gray-200"
+              : "top-3 left-3 bottom-3 rounded-2xl shadow-2xl border border-gray-200/50"
+          )}
         >
-          <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200 group-hover:scale-105">
-            <Target className="h-5 w-5 text-white" />
-          </div>
-          <div className="absolute left-20 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-            PPL Coach
-          </div>
-        </Link>
+          {/* Header */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <Target className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-semibold text-gray-900">PPL Coach</span>
+            </Link>
 
-        {/* Navigation */}
-        <nav className="flex-1 flex flex-col items-center py-8 space-y-4">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href
-            return (
-              <Link key={item.name} to={item.href} className="group relative">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 relative",
-                    isActive
-                      ? "bg-gray-100 text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                  )}
+            <div className="flex items-center space-x-2">
+              {isFloating && (
+                <button
+                  onClick={dockSidebar}
+                  className="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs font-medium text-gray-600 transition-colors"
                 >
-                  <item.icon className="h-5 w-5" />
-
-                  {/* Active indicator */}
-                  {isActive && (
-                    <div className="absolute -left-4 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gray-900 rounded-r-full" />
-                  )}
-                </div>
-
-                {/* Tooltip */}
-                <div className="absolute left-16 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                  {item.name}
-                  <kbd className="ml-2 px-1 py-0.5 bg-gray-700 rounded text-xs">
-                    ⌘{item.shortcut}
-                  </kbd>
-                </div>
-              </Link>
-            )
-          })}
-        </nav>
-
-        {/* Bottom actions */}
-        <div className="flex flex-col items-center space-y-4 pb-6">
-          {/* Integrations */}
-          <Link to="/integrations" className="group relative">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200",
-                location.pathname === '/integrations'
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                  ⚓
+                </button>
               )}
-            >
-              <Plugs className="h-5 w-5" />
+              <button
+                onClick={toggleSidebar}
+                className="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+              >
+                <Command className="h-3 w-3 text-gray-600" />
+              </button>
             </div>
-            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              Integrations
-              <kbd className="ml-2 px-1 py-0.5 bg-gray-700 rounded text-xs">⌘I</kbd>
-            </div>
-          </Link>
-
-          {/* Settings */}
-          <Link to="/settings" className="group relative">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200",
-                location.pathname === '/settings'
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-              )}
-            >
-              <Gear className="h-5 w-5" />
-            </div>
-            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              Settings
-              <kbd className="ml-2 px-1 py-0.5 bg-gray-700 rounded text-xs">⌘,</kbd>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Mobile Top Bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center">
-            <Target className="h-5 w-5 text-white" />
           </div>
-          <span className="font-semibold text-gray-900 text-lg">PPL Coach</span>
-        </Link>
 
-        {/* Mobile actions */}
-        <div className="flex items-center space-x-2">
-          {/* Quick start workout button */}
-          <Button
-            onClick={handleStartWorkout}
-            size="sm"
-            className="bg-gray-900 hover:bg-gray-800 text-white px-3 py-2 rounded-lg font-medium"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {isTodayComplete ? 'Workout' : nextDayName || 'Start'}
-          </Button>
+          {/* Search */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3 px-3 py-2 bg-white rounded-lg border border-gray-200">
+              <MagnifyingGlass className="h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 text-sm text-gray-700 placeholder-gray-400 bg-transparent focus:outline-none"
+              />
+              <kbd className="px-1 py-0.5 text-xs text-gray-400 bg-gray-100 rounded">⌘K</kbd>
+            </div>
+          </div>
 
-          {/* Mobile menu toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <List className="h-6 w-6" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
-          <div className="fixed right-0 top-16 bottom-0 w-64 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <nav className="p-4 space-y-2">
+          {/* Navigation Items */}
+          <div className="flex-1 overflow-y-auto py-4">
+            <div className="px-4 space-y-1">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
                 return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
-                      isActive
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    )}
+                  <div
+                    key={item.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, item)}
+                    className="group cursor-move"
                   >
-                    <item.icon className="h-5 w-5" />
-                    <span className="font-medium">{item.name}</span>
-                  </Link>
+                    <Link
+                      to={item.href}
+                      className={cn(
+                        "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors group/link",
+                        isActive
+                          ? "bg-gray-200 text-gray-900"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      )}
+                    >
+                      <DotsSixVertical className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <item.icon className="h-4 w-4" />
+                      <span className="text-sm font-medium">{item.name}</span>
+                      <div className="flex-1" />
+                      <kbd className="px-1 py-0.5 text-xs text-gray-400 bg-gray-200/50 rounded opacity-0 group-hover/link:opacity-100 transition-opacity">
+                        ⌘{item.shortcut}
+                      </kbd>
+                    </Link>
+                  </div>
                 )
               })}
+            </div>
+          </div>
 
-              <div className="border-t border-gray-200 pt-4 mt-4 space-y-2">
-                <Link
-                  to="/integrations"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
-                    location.pathname === '/integrations'
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  )}
-                >
-                  <Plugs className="h-5 w-5" />
-                  <span className="font-medium">Integrations</span>
-                </Link>
+          {/* Bottom Actions */}
+          <div className="p-4 border-t border-gray-200 space-y-3">
+            <button
+              onClick={handleStartWorkout}
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {isTodayComplete ? 'New Workout' : `Start ${nextDayName || 'Workout'}`}
+              </span>
+            </button>
 
-                <Link
-                  to="/settings"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
-                    location.pathname === '/settings'
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  )}
-                >
-                  <Gear className="h-5 w-5" />
-                  <span className="font-medium">Settings</span>
-                </Link>
-              </div>
-            </nav>
+            <div className="flex items-center space-x-2">
+              <Link
+                to="/integrations"
+                className={cn(
+                  "flex-1 flex items-center justify-center p-2 rounded-lg transition-colors",
+                  location.pathname === '/integrations'
+                    ? "bg-gray-200 text-gray-900"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <Plugs className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/settings"
+                className={cn(
+                  "flex-1 flex items-center justify-center p-2 rounded-lg transition-colors",
+                  location.pathname === '/settings'
+                    ? "bg-gray-200 text-gray-900"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <Gear className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Desktop Top Bar - Simplified (removed ugly features banner) */}
-      <div className="hidden lg:block fixed top-0 left-16 right-0 z-40 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        {/* Quick search */}
-        <div className="flex items-center space-x-4">
-          <button
-            className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-500 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors min-w-[200px] justify-start"
-            onClick={() => {}} // Would open command palette
-          >
-            <Command className="h-4 w-4" />
-            <span>Search exercises, workouts...</span>
-            <kbd className="ml-auto px-1 py-0.5 bg-gray-200 rounded text-xs">⌘K</kbd>
-          </button>
-        </div>
-
-        {/* Clean actions */}
-        <div className="flex items-center space-x-3">
-          {/* Intervals */}
-          <Link to="/intervals" className="group">
-            <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-              <Lightning className="h-4 w-4" />
-              <span className="text-sm font-medium">Intervals</span>
-            </div>
-          </Link>
-
-          {/* Start workout button */}
-          <Button
-            onClick={handleStartWorkout}
-            className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 shadow-sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {isTodayComplete ? 'Workout' : `Start ${nextDayName || 'Workout'}`}
-          </Button>
-        </div>
-      </div>
-
-      {/* Mobile Bottom Tab Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-2 py-2">
-        <div className="flex items-center justify-around">
-          {navigation.slice(0, 5).map((item) => {
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+        <div className="flex items-center justify-around py-2">
+          {navigation.slice(0, 4).map((item) => {
             const isActive = location.pathname === item.href
             return (
               <Link
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center p-2 rounded-lg transition-colors min-w-[60px]",
+                  "flex flex-col items-center justify-center p-3 rounded-lg transition-colors min-w-[60px]",
                   isActive
                     ? "text-gray-900 bg-gray-100"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    : "text-gray-500 hover:text-gray-900"
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium mt-1">{item.name === 'Dashboard' ? 'Home' : item.name}</span>
+                <span className="text-xs font-medium mt-1">{item.name}</span>
               </Link>
             )
           })}
+          <button
+            onClick={handleStartWorkout}
+            className="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-900 text-white min-w-[60px]"
+          >
+            <Plus className="h-5 w-5" />
+            <span className="text-xs font-medium mt-1">Start</span>
+          </button>
         </div>
       </div>
 
-      {/* Main content offset */}
-      <div className="lg:pl-16 lg:pt-16 pt-16 pb-20 lg:pb-0">
-        {/* This creates the proper spacing for the main content */}
-      </div>
     </>
   )
 }

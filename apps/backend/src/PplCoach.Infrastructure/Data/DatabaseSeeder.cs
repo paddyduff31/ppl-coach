@@ -11,21 +11,32 @@ public static class DatabaseSeeder
         try
         {
             if (await context.Movements.AnyAsync())
+            {
+                Console.WriteLine("🌱 Database already seeded - movements exist");
                 return; // Already seeded
+            }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"🌱 Error checking for existing movements, continuing with seeding: {ex.Message}");
             // Tables don't exist yet, that's fine - continue seeding
         }
 
+        Console.WriteLine("🌱 Starting database seeding...");
+
         await SeedUserProfilesAsync(context);
         await context.SaveChangesAsync();
+        Console.WriteLine("🌱 User profiles seeded");
 
         await SeedMovementsAsync(context);
         await context.SaveChangesAsync();
+        Console.WriteLine("🌱 Movements seeded");
 
         await SeedTemplatesAsync(context);
         await context.SaveChangesAsync();
+        Console.WriteLine("🌱 Templates seeded");
+
+        Console.WriteLine("🌱 Database seeding completed!");
     }
 
     private static async Task SeedUserProfilesAsync(PplCoachDbContext context)

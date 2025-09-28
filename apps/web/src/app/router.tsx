@@ -11,6 +11,7 @@ import WorkoutHistory from '../pages/WorkoutHistory'
 import Calendar from '../pages/Calendar'
 import Integrations from '../pages/Integrations'
 import { Navigation } from '../components/Navigation'
+import { ContentWrapper } from '../components/ContentWrapper'
 import { GlobalShortcuts } from '../components/GlobalShortcuts'
 import { useGlobalShortcuts } from '../hooks/useKeyboardShortcuts'
 import { PageErrorBoundary } from '../components/ErrorBoundary'
@@ -27,9 +28,11 @@ const rootRoute = createRootRoute({
     return (
       <>
         <Navigation />
-        <PageErrorBoundary>
-          <Outlet />
-        </PageErrorBoundary>
+        <ContentWrapper>
+          <PageErrorBoundary>
+            <Outlet />
+          </PageErrorBoundary>
+        </ContentWrapper>
         <GlobalShortcuts />
       </>
     )

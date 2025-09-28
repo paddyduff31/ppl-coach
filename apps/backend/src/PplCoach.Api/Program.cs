@@ -96,6 +96,7 @@ try
     // API endpoints with security
     app.MapHub<WorkoutHub>("/hubs/workout").RequireAuthorization();
     app.MapControllers();
+    app.MapAllEndpoints();
 
     // Success logging
     var logger = app.Services.GetRequiredService<ILogger<Program>>();

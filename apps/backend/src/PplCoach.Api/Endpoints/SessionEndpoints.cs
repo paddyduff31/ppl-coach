@@ -40,6 +40,32 @@ public static class SessionEndpoints
         .Produces<List<WorkoutSessionDto>>(200)
         .ProducesProblem(500);
 
+        // GET /api/sessions/{id}
+        group.MapGet("/{id:guid}", async (
+            [FromRoute] Guid id,
+            ISessionService service) =>
+        {
+            try
+            {
+                var session = await service.GetSessionAsync(id);
+                return session is not null ? Results.Ok(session) : Results.NotFound();
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to retrieve session",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithName("GetSessionById")
+        .WithSummary("Get session by ID")
+        .WithDescription("Retrieve a specific workout session by its ID")
+        .Produces<WorkoutSessionDto>(200)
+        .ProducesProblem(404)
+        .ProducesProblem(500);
+
         // GET /api/sessions/user/{userId}/stats
         group.MapGet("/user/{userId:guid}/stats", async (
             [FromRoute] Guid userId,

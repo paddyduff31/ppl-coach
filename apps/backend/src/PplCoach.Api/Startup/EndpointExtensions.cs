@@ -10,6 +10,7 @@ public static class EndpointExtensions
         app.MapSessionEndpoints();
         app.MapMovementEndpoints();
         app.MapProgressEndpoints();
+        app.MapProfileEndpoints();
         app.MapShuffleEndpoints();
         app.MapIntegrationEndpoints();
         app.MapWebhookEndpoints();

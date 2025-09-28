@@ -10,6 +10,8 @@ public static class TelemetryExtensions
 {
     public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration, string serviceName = "ppl-coach-api")
     {
+        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService(serviceName)
@@ -19,25 +21,42 @@ public static class TelemetryExtensions
                     new KeyValuePair<string, object>("deployment.environment",
                         Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "development")
                 }))
-            .WithTracing(tracing => tracing
-                .AddAspNetCoreInstrumentation(options =>
-                {
-                    options.RecordException = true;
-                    options.EnrichWithHttpRequest = (activity, request) =>
+            .WithTracing(tracing =>
+            {
+                tracing
+                    .AddAspNetCoreInstrumentation(options =>
                     {
-                        activity.SetTag("user.id", request.HttpContext.User?.Identity?.Name ?? "anonymous");
-                    };
-                })
-                .AddEntityFrameworkCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddConsoleExporter() // For development
-                .AddOtlpExporter()) // For production (Jaeger/OTEL)
-            .WithMetrics(metrics => metrics
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddRuntimeInstrumentation()
-                .AddConsoleExporter()
-                .AddOtlpExporter());
+                        options.RecordException = true;
+                        options.EnrichWithHttpRequest = (activity, request) =>
+                        {
+                            activity.SetTag("user.id", request.HttpContext.User?.Identity?.Name ?? "anonymous");
+                        };
+                    })
+                    .AddEntityFrameworkCoreInstrumentation()
+                    .AddHttpClientInstrumentation();
+
+                // Only add console exporter in production for tracing
+                if (!isDevelopment)
+                {
+                    tracing.AddConsoleExporter();
+                }
+
+                tracing.AddOtlpExporter(); // For production (Jaeger/OTEL)
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddRuntimeInstrumentation();
+
+                // NEVER add console exporter for metrics - it's too noisy!
+                // Only send to OTEL collectors in production
+                if (!isDevelopment)
+                {
+                    metrics.AddOtlpExporter();
+                }
+            });
 
         // Add custom activity source for business operations
         services.AddSingleton(new ActivitySource(serviceName));
