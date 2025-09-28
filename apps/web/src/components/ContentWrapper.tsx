@@ -32,27 +32,18 @@ export function ContentWrapper({ children }: ContentWrapperProps) {
   return (
     <div
       className={cn(
-        "transition-all duration-300 min-h-screen",
-        shouldShowRoundedContent ? "lg:pl-72" : "lg:pl-0",
-        "pb-20 lg:pb-0"
+        "transition-all duration-300 min-h-screen pb-20 lg:pb-0",
+        shouldShowRoundedContent ? "lg:pl-72" : "lg:pl-0"
       )}
       style={{
         backgroundColor: shouldShowRoundedContent ? '#f3f4f6' : 'white'
       }}
     >
-      {/* Just show the content - keep it simple! */}
       {shouldShowRoundedContent ? (
-        // Desktop: Arc-style rounded content when sidebar is docked
-        <>
-          <div className="hidden lg:block h-full bg-white ml-3 mr-3 mt-3 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            {children}
-          </div>
-          <div className="lg:hidden">
-            {children}
-          </div>
-        </>
+        <div className="h-full bg-white ml-3 mr-3 mt-3 rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-6">
+          {children}
+        </div>
       ) : (
-        // Desktop & Mobile: Regular content when sidebar is hidden/floating
         <div className="h-full">
           {children}
         </div>
