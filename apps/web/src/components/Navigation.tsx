@@ -224,7 +224,7 @@ export function Navigation() {
             isFloating
               ? "top-3 left-3 bottom-3 rounded-2xl shadow-2xl border border-gray-200/50"
               : isDocked
-              ? "top-0 left-0 h-screen border-r border-gray-200"
+              ? "top-0 left-0 h-screen"
               : "top-3 left-3 bottom-3 rounded-2xl shadow-2xl border border-gray-200/50"
           )}
         >

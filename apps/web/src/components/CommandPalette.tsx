@@ -8,7 +8,6 @@ import {
   Clock,
   Target,
   Gear,
-  Lightning,
   Timer,
   House,
   ArrowRight,
