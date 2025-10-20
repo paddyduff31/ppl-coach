@@ -39,6 +39,9 @@ builder.Services
     .AddExternalServices()
     .AddValidationServices()
 
+    // File Upload Services - Register interface directly
+    .AddFileUpload(builder.Configuration, builder.Environment)
+
     // Web Services - HTTP concerns
     .AddCustomCors(builder.Configuration)
     .AddCustomRateLimiting();
@@ -77,6 +80,12 @@ try
 
     // Database initialization
     await app.MigrateDatabaseAsync();
+
+    // File upload initialization
+    await app.InitializeFileUploadAsync();
+
+    // Enable static file serving for uploads
+    app.UseFileUpload();
 
     // Built-in middleware chain
     app.UseMiddleware<GlobalExceptionHandlingMiddleware>()

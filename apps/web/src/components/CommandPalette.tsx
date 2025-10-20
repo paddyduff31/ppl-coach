@@ -1,17 +1,17 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  Command,
-  MagnifyingGlass,
-  Play,
-  ChartLine,
-  Clock,
-  Target,
-  Gear,
-  Timer,
-  House,
-  ArrowRight,
-  Keyboard
+  CommandIcon,
+  MagnifyingGlassIcon,
+  PlayIcon,
+  ChartLineIcon,
+  ClockIcon,
+  TargetIcon,
+  GearIcon,
+  TimerIcon,
+  HouseIcon,
+  ArrowRightIcon,
+  KeyboardIcon
 } from '@phosphor-icons/react'
 import { cn } from '../utils/utils'
 
@@ -43,7 +43,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Home',
       subtitle: 'Go to dashboard',
       action: () => navigate({ to: '/' }),
-      icon: House,
+      icon: HouseIcon,
       keywords: ['home', 'dashboard', 'main'],
       category: 'navigation'
     },
@@ -52,7 +52,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Progress',
       subtitle: 'View your progress and PRs',
       action: () => navigate({ to: '/progress' }),
-      icon: ChartLine,
+      icon: ChartLineIcon,
       keywords: ['progress', 'chart', 'pr', 'personal record'],
       category: 'navigation'
     },
@@ -61,7 +61,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Workout History',
       subtitle: 'View past workouts',
       action: () => navigate({ to: '/history' }),
-      icon: Clock,
+      icon: ClockIcon,
       keywords: ['history', 'past', 'workouts', 'sessions'],
       category: 'navigation'
     },
@@ -70,7 +70,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Exercises',
       subtitle: 'Browse exercise library',
       action: () => navigate({ to: '/movements' }),
-      icon: Target,
+      icon: TargetIcon,
       keywords: ['exercises', 'movements', 'library'],
       category: 'navigation'
     },
@@ -79,7 +79,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Settings',
       subtitle: 'Configure your preferences',
       action: () => navigate({ to: '/settings' }),
-      icon: Gear,
+      icon: GearIcon,
       keywords: ['settings', 'preferences', 'config'],
       category: 'navigation'
     },
@@ -90,7 +90,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Start Workout',
       subtitle: 'Begin your next workout session',
       action: () => navigate({ to: '/plan' }),
-      icon: Play,
+      icon: PlayIcon,
       keywords: ['start', 'workout', 'begin', 'train'],
       category: 'actions'
     },
@@ -99,7 +99,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Interval Timer',
       subtitle: 'Start interval timer',
       action: () => navigate({ to: '/intervals' }),
-      icon: Timer,
+      icon: TimerIcon,
       keywords: ['timer', 'interval', 'rest'],
       category: 'actions'
     }
@@ -184,7 +184,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         <div className="glass rounded-2xl border border-border/50 shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="flex items-center px-4 py-3 border-b border-border/50">
-            <MagnifyingGlass className="h-5 w-5 text-muted-foreground mr-3" />
+            <MagnifyingGlassIcon className="h-5 w-5 text-muted-foreground mr-3" />
             <input
               ref={inputRef}
               type="text"
@@ -205,7 +205,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           <div className="max-h-96 overflow-y-auto">
             {filteredCommands.length === 0 ? (
               <div className="px-4 py-8 text-center text-muted-foreground">
-                <Command className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <CommandIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>No commands found</p>
               </div>
             ) : (
@@ -255,7 +255,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                               )}
                             </div>
                             {isSelected && (
-                              <ArrowRight className="h-4 w-4 ml-2 text-primary-foreground/70 flex-shrink-0" />
+                              <ArrowRightIcon className="h-4 w-4 ml-2 text-primary-foreground/70 flex-shrink-0" />
                             )}
                           </button>
                         )
@@ -270,7 +270,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           {/* Footer */}
           <div className="flex items-center justify-between px-4 py-2 border-t border-border/50 bg-muted/20">
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <Keyboard className="h-3 w-3" />
+              <KeyboardIcon className="h-3 w-3" />
               <span>Tip: Use keyboard shortcuts for faster navigation</span>
             </div>
             <button

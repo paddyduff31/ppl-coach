@@ -6,8 +6,6 @@ import {
   TrendDown,
   Minus,
   Target,
-  Fire,
-  Lightning,
   Crown
 } from '@phosphor-icons/react'
 import { cn } from '../../utils/utils'

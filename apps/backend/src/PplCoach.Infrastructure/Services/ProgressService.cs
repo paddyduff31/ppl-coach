@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using PplCoach.Application.DTOs;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models;
+using PplCoach.Application.Abstractions;
 using PplCoach.Application.Utils;
 using PplCoach.Infrastructure.Data;
 
@@ -8,7 +8,7 @@ namespace PplCoach.Infrastructure.Services;
 
 public class ProgressService(PplCoachDbContext context) : IProgressService
 {
-    public async Task<List<PersonalRecordDto>> GetPersonalRecordsAsync(Guid userId)
+    public async Task<List<PersonalRecordModel>> GetPersonalRecordsAsync(Guid userId)
     {
         var records = await context.SetLogs
             .Include(sl => sl.Session)
@@ -24,7 +24,7 @@ public class ProgressService(PplCoachDbContext context) : IProgressService
             })
             .ToListAsync();
 
-        var personalRecords = records.Select(r => new PersonalRecordDto
+        var personalRecords = records.Select(r => new PersonalRecordModel
         {
             MovementName = r.MovementName,
             HeaviestWeight = r.HeaviestSet.WeightKg,
@@ -36,7 +36,7 @@ public class ProgressService(PplCoachDbContext context) : IProgressService
         return personalRecords;
     }
 
-    public async Task<List<MuscleGroupProgressDto>> GetMuscleGroupProgressAsync(Guid userId, DateOnly startDate, DateOnly endDate)
+    public async Task<List<MuscleGroupProgressModel>> GetMuscleGroupProgressAsync(Guid userId, DateOnly startDate, DateOnly endDate)
     {
         var setLogs = await context.SetLogs
             .Include(sl => sl.Session)
@@ -52,7 +52,7 @@ public class ProgressService(PplCoachDbContext context) : IProgressService
                 MuscleGroup = sl.Movement.MuscleGroup,
                 Week = GetWeekStart(sl.Session.Date)
             })
-            .Select(g => new MuscleGroupProgressDto
+            .Select(g => new MuscleGroupProgressModel
             {
                 MuscleGroup = g.Key.MuscleGroup,
                 WeekStarting = g.Key.Week,
@@ -65,14 +65,14 @@ public class ProgressService(PplCoachDbContext context) : IProgressService
         return weeklyProgress;
     }
 
-    public async Task<ProgressSummaryDto> GetProgressSummaryAsync(Guid userId)
+    public async Task<ProgressSummaryModel> GetProgressSummaryAsync(Guid userId)
     {
         var personalRecords = await GetPersonalRecordsAsync(userId);
         var lastMonth = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var muscleGroupProgress = await GetMuscleGroupProgressAsync(userId, lastMonth, today);
 
-        return new ProgressSummaryDto
+        return new ProgressSummaryModel
         {
             PersonalRecords = personalRecords,
             MuscleGroupProgress = muscleGroupProgress

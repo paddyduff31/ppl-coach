@@ -1,7 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using PplCoach.Application.DTOs;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Enums;
 using PplCoach.Domain.Repositories;
@@ -12,26 +12,26 @@ namespace PplCoach.Infrastructure.Services;
 public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
     : IMovementService
 {
-    public async Task<List<MovementDto>> GetAllAsync()
+    public async Task<List<MovementModel>> GetAllAsync()
     {
         var movements = await unitOfWork.Movements.GetAllAsync();
-        return mapper.Map<List<MovementDto>>(movements);
+        return mapper.Map<List<MovementModel>>(movements);
     }
 
-    public async Task<List<MovementDto>> GetByEquipmentAsync(EquipmentType availableEquipment)
+    public async Task<List<MovementModel>> GetByEquipmentAsync(EquipmentType availableEquipment)
     {
         var movements = await unitOfWork.Movements
             .FindAsync(m => (m.Requires & availableEquipment) == m.Requires);
-        return mapper.Map<List<MovementDto>>(movements);
+        return mapper.Map<List<MovementModel>>(movements);
     }
 
-    public async Task<MovementDto?> GetByIdAsync(Guid id)
+    public async Task<MovementModel?> GetByIdAsync(Guid id)
     {
         var movement = await unitOfWork.Movements.GetByIdAsync(id);
-        return movement != null ? mapper.Map<MovementDto>(movement) : null;
+        return movement != null ? mapper.Map<MovementModel>(movement) : null;
     }
 
-    public async Task<List<MovementDto>> ShuffleMovementsAsync(ShuffleRequestDto request)
+    public async Task<List<MovementModel>> ShuffleMovementsAsync(ShuffleRequestModel request)
     {
         var availableEquipment = request.AvailableEquipment.Aggregate(EquipmentType.None, (current, eq) => current | eq);
 
@@ -70,6 +70,6 @@ public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbC
             .Take(6)
             .ToList();
 
-        return mapper.Map<List<MovementDto>>(orderedMovements);
+        return mapper.Map<List<MovementModel>>(orderedMovements);
     }
 }

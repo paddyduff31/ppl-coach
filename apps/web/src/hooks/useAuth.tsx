@@ -97,7 +97,7 @@ export function useAuth() {
 }
 
 export function AuthRedirect() {
-  const { user, isLoading, error } = useAuth()
+  const { isLoading, error } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {

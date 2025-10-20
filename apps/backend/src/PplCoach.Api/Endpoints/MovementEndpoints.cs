@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using PplCoach.Application.DTOs;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Enums;
 
 namespace PplCoach.Api.Endpoints;

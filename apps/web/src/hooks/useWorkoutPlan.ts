@@ -19,7 +19,7 @@ export function useWorkoutPlan() {
   const { userId } = useUser()
 
   // Use the generated API client hook to get user sessions
-  const { data: recentSessions, isLoading } = useGetUserSessions(userId!, {
+  const { data: recentSessions, isLoading } = useGetUserSessions(userId!, undefined, {
     query: {
       enabled: !!userId,
     }
@@ -36,7 +36,8 @@ export function useWorkoutPlan() {
 
     // Get the most recent session
     const lastSession = sessions
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+      .filter((session) => !!session.date)
+      .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())[0]
 
     // Cycle through Push -> Pull -> Legs -> Push...
     const lastDayType = lastSession.dayType as DayType
@@ -48,14 +49,15 @@ export function useWorkoutPlan() {
     if (sessions.length === 0) return 0
 
     const sortedSessions = sessions
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .filter((session) => !!session.date)
+      .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())
 
     let streak = 0
     const currentDate = new Date()
     currentDate.setHours(0, 0, 0, 0)
 
     for (const session of sortedSessions) {
-      const sessionDate = new Date(session.date)
+      const sessionDate = new Date(session.date!)
       sessionDate.setHours(0, 0, 0, 0)
 
       const daysDiff = Math.floor((currentDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -81,6 +83,7 @@ export function useWorkoutPlan() {
     startOfWeek.setHours(0, 0, 0, 0)
 
     return sessions.filter(session => {
+      if (!session.date) return false
       const sessionDate = new Date(session.date)
       return sessionDate >= startOfWeek
     })
@@ -101,7 +104,8 @@ export function useWorkoutPlan() {
     if (sessions.length === 0) return null
 
     const lastSession = sessions
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+      .filter((session) => !!session.date)
+      .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())[0]
 
     return {
       date: lastSession.date,

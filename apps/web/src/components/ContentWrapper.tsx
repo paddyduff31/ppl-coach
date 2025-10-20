@@ -1,4 +1,5 @@
-import { ReactNode, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '../utils/utils'
 
 interface ContentWrapperProps {
@@ -18,13 +19,21 @@ export function ContentWrapper({ children }: ContentWrapperProps) {
 
   // Listen for sidebar state changes via custom events
   useEffect(() => {
-    const handleSidebarChange = (event: CustomEvent) => {
-      setSidebarDocked(event.detail.isDocked)
-      setSidebarHidden(event.detail.isHidden)
+    type SidebarStateEvent = CustomEvent<{
+      isDocked: boolean
+      isHidden: boolean
+      isFloating: boolean
+    }>
+
+    const handleSidebarChange = (event: Event) => {
+      const detail = (event as SidebarStateEvent).detail
+      if (!detail) return
+      setSidebarDocked(detail.isDocked)
+      setSidebarHidden(detail.isHidden)
     }
 
-    window.addEventListener('sidebar-state-change', handleSidebarChange)
-    return () => window.removeEventListener('sidebar-state-change', handleSidebarChange)
+    window.addEventListener('sidebar-state-change', handleSidebarChange as EventListener)
+    return () => window.removeEventListener('sidebar-state-change', handleSidebarChange as EventListener)
   }, [])
 
   const shouldShowRoundedContent = sidebarDocked && !sidebarHidden
@@ -41,7 +50,14 @@ export function ContentWrapper({ children }: ContentWrapperProps) {
     >
       {shouldShowRoundedContent ? (
         <div className="h-full bg-white rounded-2xl shadow-sm relative ml-3">
-          <div className="h-full overflow-y-scroll p-6 no-scrollbar">
+          <div
+            className="h-full overflow-y-scroll p-6"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              overflow: '-moz-scrollbars-none'
+            }}
+          >
             {children}
           </div>
         </div>

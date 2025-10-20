@@ -47,8 +47,14 @@ export function useProgressSummary() {
 export function useMuscleGroupProgress() {
   const { user } = useAuth()
 
-  // Note: This hook might need params - check the generated API client for GetMuscleGroupProgressParams
-  return useGetMuscleGroupProgress(user?.id!, {}, {
+  const end = new Date()
+  const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const params = {
+    startDate: start.toISOString().split('T')[0],
+    endDate: end.toISOString().split('T')[0],
+  }
+
+  return useGetMuscleGroupProgress(user?.id!, params, {
     query: {
       enabled: !!user?.id,
     }

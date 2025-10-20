@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using PplCoach.Application.Services;
-using PplCoach.Application.DTOs;
+using PplCoach.Application.Abstractions;
+using PplCoach.Application.Models;
 
 namespace PplCoach.Api.Endpoints;
 
@@ -37,7 +37,7 @@ public static class SessionEndpoints
         .WithName("GetUserSessions")
         .WithSummary("Get user sessions")
         .WithDescription("Retrieve all workout sessions for a specific user, optionally filtered by date range")
-        .Produces<List<WorkoutSessionDto>>(200)
+        .Produces<List<WorkoutSessionModel>>(200)
         .ProducesProblem(500);
 
         // GET /api/sessions/{id}
@@ -62,7 +62,7 @@ public static class SessionEndpoints
         .WithName("GetSessionById")
         .WithSummary("Get session by ID")
         .WithDescription("Retrieve a specific workout session by its ID")
-        .Produces<WorkoutSessionDto>(200)
+        .Produces<WorkoutSessionModel>(200)
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -93,7 +93,7 @@ public static class SessionEndpoints
 
         // POST /api/sessions
         group.MapPost("/", async (
-            [FromBody] CreateSessionDto request,
+            [FromBody] CreateSessionModel request,
             ISessionService service) =>
         {
             try
@@ -113,13 +113,13 @@ public static class SessionEndpoints
         .WithName("CreateSession")
         .WithSummary("Create a new workout session")
         .WithDescription("Create a new workout session for a user")
-        .Produces<WorkoutSessionDto>(201)
+        .Produces<WorkoutSessionModel>(201)
         .ProducesProblem(500);
 
         // PUT /api/sessions/{id}
         group.MapPut("/{id:guid}", async (
             [FromRoute] Guid id,
-            [FromBody] CreateSessionDto request,
+            [FromBody] CreateSessionModel request,
             ISessionService service) =>
         {
             try
@@ -139,14 +139,14 @@ public static class SessionEndpoints
         .WithName("UpdateSession")
         .WithSummary("Update an existing workout session")
         .WithDescription("Update an existing workout session")
-        .Produces<WorkoutSessionDto>(200)
+        .Produces<WorkoutSessionModel>(200)
         .ProducesProblem(404)
         .ProducesProblem(500);
 
         // POST /api/sessions/{sessionId}/sets
         group.MapPost("/{sessionId:guid}/sets", async (
             [FromRoute] Guid sessionId,
-            [FromBody] CreateSetLogDto request,
+            [FromBody] CreateSetLogModel request,
             ISessionService service) =>
         {
             try
@@ -166,7 +166,7 @@ public static class SessionEndpoints
         .WithName("LogSet")
         .WithSummary("Log a set for a workout session")
         .WithDescription("Add a new set log entry to an existing workout session")
-        .Produces<SetLogDto>(201)
+        .Produces<SetLogModel>(201)
         .ProducesProblem(500);
     }
 }

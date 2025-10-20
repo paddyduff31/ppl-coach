@@ -3,7 +3,7 @@ import {
   useGetSession,
   useGetUserSessions,
   useLogSet as useLogSetMutation,
-  useDeleteSet as useDeleteSetMutation
+  useDeleteSet as useDeleteSetMutation,
 } from '@ppl-coach/api-client'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -12,31 +12,6 @@ export function useCreateSession() {
 
   return useCreateSessionMutation({
     mutation: {
-      onMutate: async (variables) => {
-        // Cancel any outgoing refetches
-        await queryClient.cancelQueries({ queryKey: ['sessions'] })
-
-        // Snapshot the previous value
-        const previousSessions = queryClient.getQueryData(['sessions'])
-
-        // Optimistically update with new session
-        queryClient.setQueryData(['sessions'], (old: any[]) => {
-          if (!old) return [variables]
-          return [
-            {
-              ...variables,
-              id: `temp-${Date.now()}`, // Temporary ID
-              createdAt: new Date().toISOString(),
-            },
-            ...old
-          ]
-        })
-
-        return { previousSessions }
-      },
-      onError: (err, newSession, context) => {
-        queryClient.setQueryData(['sessions'], context?.previousSessions)
-      },
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: ['sessions'] })
       },
@@ -47,15 +22,13 @@ export function useCreateSession() {
 export function useCreateSessionHook() {
   const queryClient = useQueryClient()
 
-  const mutation = useCreateSessionMutation({
+  return useCreateSessionMutation({
     mutation: {
-      onSuccess: () => {
+      onSettled: () => {
         queryClient.invalidateQueries({ queryKey: ['sessions'] })
       },
     },
   })
-
-  return mutation
 }
 
 export function useSession(id: string | undefined) {
@@ -67,7 +40,7 @@ export function useSession(id: string | undefined) {
 }
 
 export function useUserSessions(userId: string, startDate?: string, endDate?: string) {
-  return useGetUserSessions(userId!, {
+  return useGetUserSessions(userId!, { startDate, endDate }, {
     query: {
       enabled: !!userId,
     },
@@ -75,108 +48,17 @@ export function useUserSessions(userId: string, startDate?: string, endDate?: st
 }
 
 export function useLogSet() {
-  const queryClient = useQueryClient()
-
-  return useLogSetMutation({
-    mutation: {
-      onMutate: async (variables) => {
-        // Cancel any outgoing refetches
-        await queryClient.cancelQueries({ queryKey: ['sessions'] })
-
-        // Snapshot the previous value
-        const previousSessions = queryClient.getQueryData(['sessions'])
-
-        // Optimistically add the set to the session
-        queryClient.setQueryData(['sessions'], (old: any[]) => {
-          if (!old) return old
-          return old.map(session =>
-            session.id === variables.sessionId
-              ? {
-                  ...session,
-                  setLogs: [
-                    ...(session.setLogs || []),
-                    {
-                      ...variables.data,
-                      id: `temp-set-${Date.now()}`,
-                      loggedAt: new Date().toISOString(),
-                    }
-                  ]
-                }
-              : session
-          )
-        })
-
-        return { previousSessions }
-      },
-      onError: (err, variables, context) => {
-        queryClient.setQueryData(['sessions'], context?.previousSessions)
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries({ queryKey: ['sessions'] })
-      },
-    },
-  })
+  return useLogSetMutation()
 }
 
 export function useLogSetHook() {
-  const queryClient = useQueryClient()
-
-  return useLogSetMutation({
-    mutation: {
-      onSuccess: (_, variables) => {
-        // Invalidate the session to refetch with new set
-        queryClient.invalidateQueries({ queryKey: ['sessions', variables.sessionId] })
-      },
-    },
-  })
+  return useLogSetMutation()
 }
 
 export function useDeleteSet() {
-  const queryClient = useQueryClient()
-
-  return useDeleteSetMutation({
-    mutation: {
-      onMutate: async (variables) => {
-        // Cancel any outgoing refetches
-        await queryClient.cancelQueries({ queryKey: ['sessions'] })
-
-        // Snapshot the previous value
-        const previousSessions = queryClient.getQueryData(['sessions'])
-
-        // Optimistically remove the set
-        queryClient.setQueryData(['sessions'], (old: any[]) => {
-          if (!old) return old
-          return old.map(session =>
-            session.id === variables.sessionId
-              ? {
-                  ...session,
-                  setLogs: (session.setLogs || []).filter((set: any) => set.id !== variables.setId)
-                }
-              : session
-          )
-        })
-
-        return { previousSessions }
-      },
-      onError: (err, variables, context) => {
-        queryClient.setQueryData(['sessions'], context?.previousSessions)
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries({ queryKey: ['sessions'] })
-      },
-    },
-  })
+  return useDeleteSetMutation()
 }
 
 export function useDeleteSetHook() {
-  const queryClient = useQueryClient()
-
-  return useDeleteSetMutation({
-    mutation: {
-      onSuccess: () => {
-        // Invalidate all sessions to ensure consistency
-        queryClient.invalidateQueries({ queryKey: ['sessions'] })
-      },
-    },
-  })
+  return useDeleteSetMutation()
 }

@@ -8,14 +8,9 @@ import {
   Trophy,
   Fire,
   Lightning,
-  Target,
-  TrendUp,
-  Heart,
   Barbell,
-  Timer,
   Eye,
   ChatCircle,
-  ThumbsUp,
   Share
 } from '@phosphor-icons/react'
 import { cn } from '../../utils/utils'

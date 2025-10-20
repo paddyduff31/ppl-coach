@@ -1,7 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using PplCoach.Application.DTOs;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models;
+using PplCoach.Application.Abstractions;
 
 namespace PplCoach.Api.Endpoints;
 
@@ -37,9 +37,9 @@ public static class ProfileEndpoints
 
         group.MapPut("/{id:guid}", async (
             Guid id,
-            [FromBody] UpdateUserProfileDto dto,
+            [FromBody] UpdateUserProfileModel dto,
             IUserProfileService service,
-            IValidator<UpdateUserProfileDto> validator) =>
+            IValidator<UpdateUserProfileModel> validator) =>
         {
             var validationResult = await validator.ValidateAsync(dto);
             if (!validationResult.IsValid)

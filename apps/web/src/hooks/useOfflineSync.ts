@@ -1,7 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '../stores/appStore';
-import { useWorkoutStore } from '../stores/workoutStore';
 
 interface SyncItem {
   id: string;
@@ -14,7 +13,6 @@ interface SyncItem {
 export function useOfflineSync() {
   const queryClient = useQueryClient();
   const { isOnline, updateLastSyncTime } = useAppStore();
-  const { currentWorkout } = useWorkoutStore();
 
   // Store offline actions for later sync
   const addToSyncQueue = useCallback((item: Omit<SyncItem, 'retryCount'>) => {

@@ -1,9 +1,9 @@
 using FluentValidation;
-using PplCoach.Application.DTOs;
+using PplCoach.Application.Models;
 
 namespace PplCoach.Application.Validators;
 
-public class CreateSetLogValidator : AbstractValidator<CreateSetLogDto>
+public class CreateSetLogValidator : AbstractValidator<CreateSetLogModel>
 {
     public CreateSetLogValidator()
     {

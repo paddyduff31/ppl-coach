@@ -5,7 +5,6 @@ import { Label } from '../components/ui/label'
 import { Badge } from '../components/ui/badge'
 import { 
   User, 
-  Barbell, 
   Target, 
   Clock, 
   Palette, 

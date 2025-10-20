@@ -3,13 +3,11 @@ import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import {
   Camera,
-  CameraSlash,
   Eye,
   Target,
   CheckCircle,
   Warning,
   Lightning,
-  Play,
   Stop
 } from '@phosphor-icons/react'
 import { cn } from '../../utils/utils'
@@ -30,7 +28,6 @@ interface AIFormCoachProps {
 
 export function AIFormCoach({ currentMovement = 'squat', onFormAnalysis }: AIFormCoachProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isActive, setIsActive] = useState(false)
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [currentAnalysis, setCurrentAnalysis] = useState<FormAnalysis | null>(null)

@@ -1,9 +1,9 @@
 using FluentValidation;
-using PplCoach.Application.DTOs;
+using PplCoach.Application.Models;
 
 namespace PplCoach.Application.Validators;
 
-public class CreateSessionValidator : AbstractValidator<CreateSessionDto>
+public class CreateSessionValidator : AbstractValidator<CreateSessionModel>
 {
     public CreateSessionValidator()
     {

@@ -1,16 +1,9 @@
-import React, { useCallback } from 'react'
+import { useCallback, createElement } from 'react'
+import type { MouseEvent } from 'react'
 
 export type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error'
-
-interface HapticFeedbackOptions {
-  duration?: number
-  intensity?: 'light' | 'medium' | 'heavy'
-}
-
 export function useHapticFeedback() {
-  const triggerHaptic = useCallback((type: HapticType, options: HapticFeedbackOptions = {}) => {
-    const { duration = 150, intensity = 'medium' } = options
-
+  const triggerHaptic = useCallback((type: HapticType) => {
     // Visual feedback through DOM manipulation
     const createVisualFeedback = (element: HTMLElement, feedbackType: HapticType) => {
       switch (feedbackType) {
@@ -130,13 +123,13 @@ export function withHapticFeedback(
   return function HapticComponent(props: any) {
     const { triggerHaptic } = useHapticFeedback()
 
-    const handleInteraction = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    const handleInteraction = useCallback((event: MouseEvent<HTMLElement>) => {
       triggerHaptic(hapticType)
       if (props.onClick) {
         props.onClick(event)
       }
     }, [triggerHaptic, props.onClick])
 
-    return React.createElement(Component, { ...props, onClick: handleInteraction })
+    return createElement(Component, { ...props, onClick: handleInteraction })
   }
 }

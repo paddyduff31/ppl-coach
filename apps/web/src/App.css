@@ -25,14 +25,21 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Hide scrollbar */
-.scrollbar-hide, .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+/* NUCLEAR SCROLLBAR DESTRUCTION */
+.scrollbar-hide, .no-scrollbar, div[style*="overflow-y-scroll"] {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  overflow: -moz-scrollbars-none !important;
 }
 
-.scrollbar-hide::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+div[style*="overflow-y-scroll"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  appearance: none !important;
 }
 
 /* Smooth focus rings */
@@ -74,6 +81,22 @@
 
 .float {
   animation: float 6s ease-in-out infinite;
+}
+
+/* Drag animations */
+@keyframes dragLift {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
+.drag-lifting {
+  animation: dragLift 0.2s ease-out forwards;
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 @keyframes shimmer {

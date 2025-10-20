@@ -1,9 +1,9 @@
 using FluentValidation;
-using PplCoach.Application.DTOs;
+using PplCoach.Application.Models;
 
 namespace PplCoach.Application.Validators;
 
-public class UpdateUserProfileValidator : AbstractValidator<UpdateUserProfileDto>
+public class UpdateUserProfileValidator : AbstractValidator<UpdateUserProfileModel>
 {
     public UpdateUserProfileValidator()
     {

@@ -1,5 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { Button } from './ui/button'
+import type { ReactNode } from 'react'
 import {
   House,
   ChartLine,
@@ -9,11 +9,9 @@ import {
   Clock,
   Target,
   Plus,
-  Lightning,
   CalendarCheck,
   Calendar,
   Plugs,
-  MagnifyingGlass,
   Sparkle,
   DotsSixVertical
 } from '@phosphor-icons/react'
@@ -24,13 +22,22 @@ import { useCreateSession } from '../hooks/useSession'
 import { useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 
-const defaultNavigation = [
-  { id: 'home', name: 'Home', href: '/', icon: House, shortcut: 'H' },
-  { id: 'calendar', name: 'Calendar', href: '/calendar', icon: Calendar, shortcut: 'C' },
-  { id: 'workouts', name: 'Workouts', href: '/plan', icon: CalendarCheck, shortcut: 'W' },
-  { id: 'exercises', name: 'Exercises', href: '/movements', icon: Barbell, shortcut: 'E' },
-  { id: 'history', name: 'History', href: '/history', icon: Clock, shortcut: 'Y' },
-  { id: 'progress', name: 'Progress', href: '/progress', icon: ChartLine, shortcut: 'P' },
+interface NavigationItem {
+  id: string
+  name: string
+  href: string
+  icon: ReactNode
+  mobileIcon: ReactNode
+  shortcut: string
+}
+
+const defaultNavigation: NavigationItem[] = [
+  { id: 'home', name: 'Home', href: '/', icon: <House className="h-4 w-4" />, mobileIcon: <House className="h-5 w-5" />, shortcut: 'H' },
+  { id: 'calendar', name: 'Calendar', href: '/calendar', icon: <Calendar className="h-4 w-4" />, mobileIcon: <Calendar className="h-5 w-5" />, shortcut: 'C' },
+  { id: 'workouts', name: 'Workouts', href: '/plan', icon: <CalendarCheck className="h-4 w-4" />, mobileIcon: <CalendarCheck className="h-5 w-5" />, shortcut: 'W' },
+  { id: 'exercises', name: 'Exercises', href: '/movements', icon: <Barbell className="h-4 w-4" />, mobileIcon: <Barbell className="h-5 w-5" />, shortcut: 'E' },
+  { id: 'history', name: 'History', href: '/history', icon: <Clock className="h-4 w-4" />, mobileIcon: <Clock className="h-5 w-5" />, shortcut: 'Y' },
+  { id: 'progress', name: 'Progress', href: '/progress', icon: <ChartLine className="h-4 w-4" />, mobileIcon: <ChartLine className="h-5 w-5" />, shortcut: 'P' },
 ]
 
 export function Navigation() {
@@ -49,20 +56,17 @@ export function Navigation() {
     const saved = localStorage.getItem('ppl-coach-sidebar-docked')
     return saved ? JSON.parse(saved) : true
   })
-  const [draggedItem, setDraggedItem] = useState<any>(null)
-  const [navigation, setNavigation] = useState(() => {
-    const saved = localStorage.getItem('ppl-coach-navigation-order')
-    return saved ? JSON.parse(saved) : defaultNavigation
-  })
+  const [draggedItem, setDraggedItem] = useState<NavigationItem | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
+  const [navigation, setNavigation] = useState<NavigationItem[]>(defaultNavigation)
 
   const sidebarRef = useRef<HTMLDivElement>(null)
   const hoverZoneRef = useRef<HTMLDivElement>(null)
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const {
     nextDayType,
     nextDayName,
-    nextDayDescription,
     isTodayComplete
   } = useWorkoutPlan()
 
@@ -149,14 +153,17 @@ export function Navigation() {
     if (!user?.id) return
 
     try {
-      const session = await createSessionMutation.mutateAsync({
-        userId: user.id,
-        date: new Date().toISOString().split('T')[0],
-        dayType: nextDayType,
-        notes: `${nextDayName} day workout`
+      const response = await createSessionMutation.mutateAsync({
+        data: {
+          userId: user.id,
+          date: new Date().toISOString().split('T')[0],
+          dayType: nextDayType,
+          notes: `${nextDayName} day workout`,
+        }
       })
 
-      navigate({ to: '/log/$id', params: { id: session.data.id } })
+      const session = ('data' in response ? response.data : response) as { id: string }
+      navigate({ to: '/log/$id', params: { id: session.id } })
     } catch (error) {
       console.error('Failed to start workout:', error)
       navigate({ to: '/plan' })
@@ -177,17 +184,57 @@ export function Navigation() {
   }
 
   // Drag and drop for reordering
-  const handleDragStart = (e: React.DragEvent, item: any) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, item: NavigationItem) => {
     setDraggedItem(item)
     e.dataTransfer.effectAllowed = 'move'
+
+    // Create a custom drag image that follows cursor
+    const dragContainer = e.currentTarget as HTMLElement
+    const dragImage = dragContainer.cloneNode(true) as HTMLElement
+    dragImage.style.transform = 'scale(1.05) rotate(2deg)'
+    dragImage.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)'
+    dragImage.style.backgroundColor = '#f9fafb'
+    dragImage.style.position = 'absolute'
+    dragImage.style.top = '-1000px'
+    dragImage.style.zIndex = '1000'
+    document.body.appendChild(dragImage)
+
+    e.dataTransfer.setDragImage(dragImage, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+
+    // Clean up drag image after a delay
+    setTimeout(() => {
+      document.body.removeChild(dragImage)
+    }, 0)
+
+    // Add ghost effect to original
+    const target = e.target as HTMLElement
+    target.style.opacity = '0.5'
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
   }
 
-  const handleDrop = (e: React.DragEvent, targetItem: any) => {
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, item: NavigationItem) => {
+    e.preventDefault()
+    if (draggedItem && draggedItem.id !== item.id) {
+      setDropTarget(item.id)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only clear drop target if we're leaving the container
+    const rect = e.currentTarget.getBoundingClientRect()
+    const { clientX, clientY } = e
+
+    if (clientX < rect.left || clientX > rect.right ||
+        clientY < rect.top || clientY > rect.bottom) {
+      setDropTarget(null)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetItem: NavigationItem) => {
     e.preventDefault()
     if (!draggedItem || draggedItem.id === targetItem.id) return
 
@@ -199,8 +246,24 @@ export function Navigation() {
     newNavigation.splice(targetIndex, 0, draggedItem)
 
     setNavigation(newNavigation)
-    localStorage.setItem('ppl-coach-navigation-order', JSON.stringify(newNavigation))
     setDraggedItem(null)
+    setDropTarget(null)
+
+    // Reset drag styles
+    const draggedElement = document.querySelector(`[data-drag-id="${draggedItem.id}"]`) as HTMLElement
+    if (draggedElement) {
+      draggedElement.style.transform = ''
+      draggedElement.style.zIndex = ''
+      draggedElement.style.boxShadow = ''
+    }
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Reset styles when drag ends
+    const target = e.target as HTMLElement
+    target.style.opacity = ''
+    setDraggedItem(null)
+    setDropTarget(null)
   }
 
   const shouldShowSidebar = !isHidden || isFloating
@@ -221,9 +284,7 @@ export function Navigation() {
           ref={sidebarRef}
           className={cn(
             "fixed z-50 w-72 bg-gray-100 transition-all duration-300 ease-out",
-            isFloating
-              ? "top-3 left-3 bottom-3 rounded-2xl shadow-2xl border border-gray-200/50"
-              : isDocked
+            isDocked && !isFloating
               ? "top-0 left-0 h-screen"
               : "top-3 left-3 bottom-3 rounded-2xl shadow-2xl border border-gray-200/50"
           )}
@@ -255,16 +316,26 @@ export function Navigation() {
             </div>
           </div>
 
-          {/* Search */}
+          {/* Profile */}
           <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center space-x-3 px-3 py-2 bg-white rounded-lg border border-gray-200">
-              <MagnifyingGlass className="h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="flex-1 text-sm text-gray-700 placeholder-gray-400 bg-transparent focus:outline-none"
-              />
-              <kbd className="px-1 py-0.5 text-xs text-gray-400 bg-gray-100 rounded">⌘K</kbd>
+            <div className="flex items-center space-x-3 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+              <div className="relative">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <button className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-600 hover:bg-gray-700 rounded-full flex items-center justify-center text-white text-xs transition-colors">
+                  +
+                </button>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.email || 'user@example.com'}
+                </p>
+              </div>
+              <Sparkle className="h-4 w-4 text-gray-400" />
             </div>
           </div>
 
@@ -273,15 +344,24 @@ export function Navigation() {
             <div className="px-4 space-y-1">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
+                const isDropTarget = dropTarget === item.id
                 return (
-                  <div
-                    key={item.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, item)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, item)}
-                    className="group cursor-move"
-                  >
+                  <div key={item.id} className="relative">
+                    {/* Drop indicator */}
+                    {isDropTarget && (
+                      <div className="absolute -top-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
+                    )}
+                    <div
+                      data-drag-id={item.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, item)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDragEnter={(e) => handleDragEnter(e, item)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, item)}
+                      className="group cursor-move transition-all duration-200 hover:scale-105"
+                    >
                     <Link
                       to={item.href}
                       className={cn(
@@ -292,13 +372,14 @@ export function Navigation() {
                       )}
                     >
                       <DotsSixVertical className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <item.icon className="h-4 w-4" />
+                      {item.icon}
                       <span className="text-sm font-medium">{item.name}</span>
                       <div className="flex-1" />
                       <kbd className="px-1 py-0.5 text-xs text-gray-400 bg-gray-200/50 rounded opacity-0 group-hover/link:opacity-100 transition-opacity">
                         ⌘{item.shortcut}
                       </kbd>
                     </Link>
+                    </div>
                   </div>
                 )
               })}
@@ -361,7 +442,7 @@ export function Navigation() {
                     : "text-gray-500 hover:text-gray-900"
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                {item.mobileIcon}
                 <span className="text-xs font-medium mt-1">{item.name}</span>
               </Link>
             )

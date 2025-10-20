@@ -1,4 +1,4 @@
-using PplCoach.Application.Services;
+using PplCoach.Application.Abstractions;
 
 namespace PplCoach.Api.Endpoints;
 

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using PplCoach.Application.DTOs;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models;
+using PplCoach.Application.Abstractions;
 
 namespace PplCoach.Api.Endpoints;
 
@@ -10,7 +10,7 @@ public static class ShuffleEndpoints
     {
         var group = app.MapGroup("/api/shuffle").WithTags("Shuffle");
 
-        group.MapPost("", async ([FromBody] ShuffleRequestDto request, IMovementService service) =>
+        group.MapPost("", async ([FromBody] ShuffleRequestModel request, IMovementService service) =>
         {
             var movements = await service.ShuffleMovementsAsync(request);
             return Results.Ok(movements);

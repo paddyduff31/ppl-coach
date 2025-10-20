@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle, TrendUp, Target, Lightning } from '@phosphor-icons/react'
 import { cn } from '../utils/utils'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'

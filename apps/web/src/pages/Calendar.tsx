@@ -63,6 +63,7 @@ export default function Calendar() {
   const sessionsByDate = useMemo(() => {
     const grouped: Record<string, any[]> = {}
     sessions.forEach(session => {
+      if (!session.date) return
       const date = new Date(session.date).toDateString()
       if (!grouped[date]) {
         grouped[date] = []
@@ -75,6 +76,7 @@ export default function Calendar() {
   // Filter sessions for list view
   const filteredSessions = useMemo(() => {
     return sessions.filter(session => {
+      if (!session.date) return false
       const sessionDate = new Date(session.date)
       const now = new Date()
       
@@ -97,7 +99,7 @@ export default function Calendar() {
         session.notes?.toLowerCase().includes(searchQuery.toLowerCase())
       
       return withinPeriod && matchesSearch
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    }).sort((a, b) => new Date(b.date ?? '').getTime() - new Date(a.date ?? '').getTime())
   }, [sessions, selectedPeriod, searchQuery])
 
   // Calculate calendar days
@@ -106,7 +108,6 @@ export default function Calendar() {
     const month = currentDate.getMonth()
     
     const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
     const startDate = new Date(firstDay)
     startDate.setDate(startDate.getDate() - firstDay.getDay())
     
@@ -362,6 +363,10 @@ export default function Calendar() {
             {/* Session List */}
             <div className="space-y-4">
               {filteredSessions.map((session) => {
+                if (!session.id || !session.date) {
+                  return null
+                }
+
                 const dayType = session.dayType as keyof typeof DAY_TYPE_NAMES
                 const sessionDate = new Date(session.date)
                 
@@ -413,12 +418,6 @@ export default function Calendar() {
                               {Math.round(session.setLogs?.reduce((total: number, set: any) => 
                                 total + (set.weightKg * set.reps), 0) || 0)} kg
                             </span>
-                            {session.duration && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {session.duration}m
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -451,21 +450,6 @@ export default function Calendar() {
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </Button>
-                        {session.isCompleted && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Create new session based on this one
-                              navigate({ to: '/plan' })
-                            }}
-                          >
-                            <Play className="h-4 w-4 mr-2" />
-                            Repeat
-                          </Button>
-                        )}
                       </div>
                     </div>
                     
@@ -507,6 +491,7 @@ export default function Calendar() {
             <div className="text-2xl font-semibold text-gray-900 mb-1">
               {viewType === 'calendar' 
                 ? sessions.filter(s => {
+                    if (!s.date) return false
                     const sessionDate = new Date(s.date)
                     return sessionDate.getMonth() === currentDate.getMonth() && 
                            sessionDate.getFullYear() === currentDate.getFullYear()

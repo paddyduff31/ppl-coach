@@ -4,27 +4,23 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Badge } from '../components/ui/badge'
-import { 
-  Plus, 
-  Play, 
-  Target, 
+import {
+  Plus,
+  Play,
+  Target,
   Barbell,
   Clock,
   PencilSimple,
-  Trash,
   Copy,
   Star,
   Users,
-  Lightning,
   Calendar,
   MagnifyingGlass,
   Funnel,
   DotsThreeVertical
 } from '@phosphor-icons/react'
-import { useMovements, useShuffleMovements } from '../hooks/useMovements'
 import { useCreateSession } from '../hooks/useSession'
 import { useUser } from '../hooks/useUser'
-import { useWorkoutPlan } from '../hooks/useWorkoutPlan'
 import { cn } from '../utils/utils'
 
 // Mock workout data - in real app would come from API
@@ -122,8 +118,8 @@ export default function Workouts() {
   const { user } = useUser()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedType, setSelectedType] = useState<string>('All')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [selectedWorkout, setSelectedWorkout] = useState<any>(null)
+  const [, setShowCreateModal] = useState(false)
+  const [, setSelectedWorkout] = useState<typeof mockWorkouts[number] | null>(null)
 
   const createSessionMutation = useCreateSession()
 
@@ -139,14 +135,17 @@ export default function Workouts() {
     const dayTypeMap = { 'Push': 1, 'Pull': 2, 'Legs': 3 }
     
     try {
-      const session = await createSessionMutation.mutateAsync({
-        userId: user.id,
-        date: new Date().toISOString().split('T')[0],
-        dayType: dayTypeMap[workout.type as keyof typeof dayTypeMap],
-        notes: `${workout.name} workout`
+      const response = await createSessionMutation.mutateAsync({
+        data: {
+          userId: user.id,
+          date: new Date().toISOString().split('T')[0],
+          dayType: dayTypeMap[workout.type as keyof typeof dayTypeMap],
+          notes: `${workout.name} workout`,
+        }
       })
 
-      navigate({ to: '/log/$id', params: { id: session.data.id } })
+      const session = response.data
+      navigate({ to: '/log/$id', params: { id: session.id } })
     } catch (error) {
       console.error('Failed to start workout:', error)
     }

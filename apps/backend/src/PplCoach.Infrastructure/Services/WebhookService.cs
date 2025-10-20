@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using PplCoach.Application.Services;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Enums;
 using System.Security.Cryptography;
 using System.Text;

@@ -1,5 +1,5 @@
 using FluentAssertions;
-using PplCoach.Application.DTOs;
+using PplCoach.Application.Models;
 using PplCoach.Application.Validators;
 using PplCoach.Domain.Enums;
 
@@ -12,7 +12,7 @@ public class ValidatorTests
     {
         // Arrange
         var validator = new UpdateUserProfileValidator();
-        var dto = new UpdateUserProfileDto
+        var dto = new UpdateUserProfileModel
         {
             DisplayName = "John Doe",
             BodyweightKg = 75.5m,
@@ -33,7 +33,7 @@ public class ValidatorTests
     {
         // Arrange
         var validator = new UpdateUserProfileValidator();
-        var dto = new UpdateUserProfileDto
+        var dto = new UpdateUserProfileModel
         {
             DisplayName = "",
             BodyweightKg = 75.5m,
@@ -53,7 +53,7 @@ public class ValidatorTests
     {
         // Arrange
         var validator = new CreateSetLogValidator();
-        var dto = new CreateSetLogDto
+        var dto = new CreateSetLogModel
         {
             SessionId = Guid.NewGuid(),
             MovementId = Guid.NewGuid(),
@@ -78,7 +78,7 @@ public class ValidatorTests
     {
         // Arrange
         var validator = new CreateSetLogValidator();
-        var dto = new CreateSetLogDto
+        var dto = new CreateSetLogModel
         {
             SessionId = Guid.NewGuid(),
             MovementId = Guid.NewGuid(),
@@ -100,7 +100,7 @@ public class ValidatorTests
     {
         // Arrange
         var validator = new CreateSessionValidator();
-        var dto = new CreateSessionDto
+        var dto = new CreateSessionModel
         {
             UserId = Guid.NewGuid(),
             Date = DateOnly.FromDateTime(DateTime.Today),

@@ -1,4 +1,4 @@
-using PplCoach.Application.Services;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Repositories;
 using PplCoach.Infrastructure.Repositories;
 using PplCoach.Infrastructure.Services;

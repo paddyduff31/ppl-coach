@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using PplCoach.Api.Configuration.Settings;
 using PplCoach.Api.Configuration.Validation;
+using PplCoach.Infrastructure.Configuration;
 
 namespace PplCoach.Api.Configuration;
 
@@ -43,6 +44,8 @@ public static class ConfigurationExtensions
         // Register all validated configurations
         services.AddValidatedConfiguration<JwtSettings>(configuration);
         services.AddValidatedConfiguration<CorsSettings>(configuration);
+        services.AddValidatedConfiguration<AwsS3Options>(configuration);
+        services.AddValidatedConfiguration<LocalFileOptions>(configuration);
 
         return services;
     }

@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Trash, X } from '@phosphor-icons/react'
+import { useState, useRef, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import { Trash } from '@phosphor-icons/react'
 import { cn } from '../utils/utils'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 
 interface SwipeToDeleteProps {
-  children: React.ReactNode
+  children: ReactNode
   onDelete: () => void
   threshold?: number
   disabled?: boolean
@@ -75,14 +76,6 @@ export function SwipeToDelete({
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
     handleStart(e.clientX)
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    handleMove(e.clientX)
-  }
-
-  const handleMouseUp = () => {
-    handleEnd()
   }
 
   // Touch events
@@ -198,7 +191,7 @@ export function SwipeToDelete({
 }
 
 // Helper hook for managing swipe-to-delete lists
-export function useSwipeToDelete<T>(items: T[], onItemDelete: (item: T, index: number) => void) {
+export function useSwipeToDelete<T>(onItemDelete: (item: T, index: number) => void) {
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null)
 
   const handleDelete = (item: T, index: number) => {

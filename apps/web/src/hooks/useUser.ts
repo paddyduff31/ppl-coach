@@ -27,19 +27,23 @@ export function useUser() {
       retry: false,
       enabled: !!storedUserId,
       staleTime: 5 * 60 * 1000, // 5 minutes - profile data doesn't change often
-      cacheTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       refetchOnMount: false, // Don't refetch when component mounts if data exists
     }
   })
 
+  type UserProfile = {
+    id: string
+    email?: string
+    name?: string
+  }
+  const profile = userProfile as UserProfile | undefined
+
   // Create user profile mutation using the generated API client hook
   const createUserMutation = useCreateProfile({
     mutation: {
-      onSuccess: (response) => {
-        const userId = response.data.id
-        setStoredUserId(userId)
-        queryClient.invalidateQueries({ queryKey: ['user', userId] })
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['user'] })
       },
     }
   })
@@ -47,10 +51,9 @@ export function useUser() {
   // Create user and store ID
   const createUser = async (email: string, displayName: string) => {
     try {
-      const response = await createUserMutation.mutateAsync({
+      await createUserMutation.mutateAsync({
         params: { email, displayName }
       })
-      return response.data
     } catch (err) {
       console.error('Failed to create user:', err)
       throw err
@@ -58,8 +61,8 @@ export function useUser() {
   }
 
   return {
-    user: userProfile,
-    userId: userProfile?.id,
+    user: profile ?? null,
+    userId: profile?.id ?? storedUserId,
     isLoading: isLoading || createUserMutation.isPending,
     error,
     createUser,

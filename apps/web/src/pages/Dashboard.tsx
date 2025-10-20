@@ -15,7 +15,6 @@ import { useAuth } from '../hooks/useAuth'
 import { useWorkoutPlan } from '../hooks/useWorkoutPlan'
 import { useCreateSession } from '../hooks/useSession'
 import { useUserSessions, useSessionStats } from '../hooks/useSessions'
-import { useShuffleMovements } from '../hooks/useMovements'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { cn } from '../utils/utils'
 
@@ -31,12 +30,6 @@ const DAY_TYPE_COLORS = {
   3: 'from-purple-500/20 to-purple-600/20'
 } as const
 
-const DAY_TYPE_BORDERS = {
-  1: 'border-blue-200',
-  2: 'border-green-200',
-  3: 'border-purple-200'
-} as const
-
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, isLoading: userLoading } = useAuth()
@@ -45,13 +38,11 @@ export default function Dashboard() {
     nextDayName,
     nextDayDescription,
     workoutStreak,
-    thisWeekSessions,
     lastWorkout,
     isTodayComplete,
     totalSessions
   } = useWorkoutPlan()
   const createSessionMutation = useCreateSession()
-  const shuffleMovementsMutation = useShuffleMovements()
   const { data: allSessions = [] } = useUserSessions()
   const sessionStats = useSessionStats(allSessions)
 
@@ -60,16 +51,17 @@ export default function Dashboard() {
         if (!user?.id) return
 
         try {
-            // Create the session
-            const session = await createSessionMutation.mutateAsync({
-                userId: user.id,
-                date: new Date().toISOString().split('T')[0],
-                dayType: nextDayType,
-                notes: `${nextDayName || 'Push'} day workout`
+            const response = await createSessionMutation.mutateAsync({
+                data: {
+                    userId: user.id,
+                    date: new Date().toISOString().split('T')[0],
+                    dayType: nextDayType,
+                    notes: `${nextDayName || 'Push'} day workout`
+                }
             })
 
-            // Navigate to session - exercises will be auto-loaded there
-            navigate({ to: '/log/$id', params: { id: session.data.id } })
+            const session = 'data' in response ? response.data : response
+            navigate({ to: '/log/$id', params: { id: session.id } })
         } catch (error) {
             console.error('Failed to start workout:', error)
         }
@@ -164,7 +156,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-4">
                         <Play className="h-6 w-6" />
                         Start {nextDayName || 'Push'} Workout
-                        {lastWorkout && (
+                        {lastWorkout?.date && (
                           <span className="text-sm opacity-75">
                             Last: {new Date(lastWorkout.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
@@ -291,9 +283,12 @@ export default function Dashboard() {
 
               <div className="space-y-3">
                 {allSessions.slice(0, 3).map((session, i) => {
+                  if (!session.date) {
+                    return null
+                  }
                   const setLogs = session.setLogs || []
                   const totalSets = setLogs.length
-                  const sessionVolume = setLogs.reduce((sum, set) => sum + (set.weightKg * set.reps), 0)
+                  const sessionVolume = setLogs.reduce((sum, set) => sum + ((set.weightKg ?? 0) * (set.reps ?? 0)), 0)
 
                   return (
                     <div
@@ -385,4 +380,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

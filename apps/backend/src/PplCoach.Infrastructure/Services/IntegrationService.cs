@@ -1,8 +1,8 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using PplCoach.Application.DTOs.Integrations;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models.Integrations;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Enums;
 using PplCoach.Domain.Repositories;
@@ -24,7 +24,7 @@ public class IntegrationService(
         return await oauthService.GenerateAuthorizationUrlAsync(type, userId, redirectUrl);
     }
 
-    public async Task<IntegrationDto> CreateIntegrationAsync(Guid userId, CreateIntegrationDto dto)
+    public async Task<IntegrationModel> CreateIntegrationAsync(Guid userId, CreateIntegrationModel dto)
     {
         // Verify state and extract user ID
         var stateData = DecodeState(dto.State);
@@ -78,25 +78,25 @@ public class IntegrationService(
 
         logger.LogInformation("Created/updated {Type} integration for user {UserId}", dto.Type, userId);
 
-        return mapper.Map<IntegrationDto>(integration);
+        return mapper.Map<IntegrationModel>(integration);
     }
 
-    public async Task<List<IntegrationDto>> GetUserIntegrationsAsync(Guid userId)
+    public async Task<List<IntegrationModel>> GetUserIntegrationsAsync(Guid userId)
     {
         var integrations = await context.ThirdPartyIntegrations
             .Where(i => i.UserId == userId)
             .OrderBy(i => i.Type)
             .ToListAsync();
 
-        return mapper.Map<List<IntegrationDto>>(integrations);
+        return mapper.Map<List<IntegrationModel>>(integrations);
     }
 
-    public async Task<IntegrationDto?> GetIntegrationAsync(Guid integrationId)
+    public async Task<IntegrationModel?> GetIntegrationAsync(Guid integrationId)
     {
         var integration = await context.ThirdPartyIntegrations
             .FirstOrDefaultAsync(i => i.Id == integrationId);
 
-        return integration != null ? mapper.Map<IntegrationDto>(integration) : null;
+        return integration != null ? mapper.Map<IntegrationModel>(integration) : null;
     }
 
     public async Task<bool> RevokeIntegrationAsync(Guid integrationId)
@@ -126,7 +126,7 @@ public class IntegrationService(
         return true;
     }
 
-    public async Task<IntegrationSyncDto> TriggerSyncAsync(Guid integrationId)
+    public async Task<IntegrationSyncModel> TriggerSyncAsync(Guid integrationId)
     {
         var integration = await context.ThirdPartyIntegrations
             .FirstOrDefaultAsync(i => i.Id == integrationId && i.IsActive);
@@ -180,10 +180,10 @@ public class IntegrationService(
 
         await unitOfWork.SaveChangesAsync();
 
-        return mapper.Map<IntegrationSyncDto>(syncLog);
+        return mapper.Map<IntegrationSyncModel>(syncLog);
     }
 
-    public async Task<List<IntegrationSyncDto>> GetSyncHistoryAsync(Guid integrationId, int limit = 10)
+    public async Task<List<IntegrationSyncModel>> GetSyncHistoryAsync(Guid integrationId, int limit = 10)
     {
         var syncLogs = await context.IntegrationSyncLogs
             .Where(sl => sl.IntegrationId == integrationId)
@@ -191,7 +191,7 @@ public class IntegrationService(
             .Take(limit)
             .ToListAsync();
 
-        return mapper.Map<List<IntegrationSyncDto>>(syncLogs);
+        return mapper.Map<List<IntegrationSyncModel>>(syncLogs);
     }
 
     private StateData DecodeState(string state)

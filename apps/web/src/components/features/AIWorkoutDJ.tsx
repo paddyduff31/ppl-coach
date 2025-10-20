@@ -9,10 +9,7 @@ import {
   SkipForward,
   SkipBack,
   Shuffle,
-  Heart,
   Lightning,
-  Fire,
-  Headphones,
   SpeakerHigh,
   SpeakerLow,
   Gauge,
@@ -50,7 +47,7 @@ interface AIPlaylist {
 }
 
 export function AIWorkoutDJ() {
-  const [currentPhase, setCurrentPhase] = useState<WorkoutPhase>({
+  const [currentPhase] = useState<WorkoutPhase>({
     phase: 'working',
     intensity: 85,
     duration: 45,

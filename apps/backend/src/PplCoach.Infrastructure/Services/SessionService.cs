@@ -1,7 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using PplCoach.Application.Services;
-using PplCoach.Application.DTOs;
+using PplCoach.Application.Abstractions;
+using PplCoach.Application.Models;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Repositories;
 
@@ -18,7 +18,7 @@ public class SessionService : ISessionService
         this.mapper = mapper;
     }
 
-    public async Task<WorkoutSessionDto> CreateSessionAsync(CreateSessionDto dto)
+    public async Task<WorkoutSessionModel> CreateSessionAsync(CreateSessionModel dto)
     {
         var session = mapper.Map<WorkoutSession>(dto);
         session.Id = Guid.NewGuid();
@@ -26,16 +26,16 @@ public class SessionService : ISessionService
         await unitOfWork.WorkoutSessions.AddAsync(session);
         await unitOfWork.SaveChangesAsync();
 
-        return mapper.Map<WorkoutSessionDto>(session);
+        return mapper.Map<WorkoutSessionModel>(session);
     }
 
-    public async Task<WorkoutSessionDto?> GetSessionAsync(Guid sessionId)
+    public async Task<WorkoutSessionModel?> GetSessionAsync(Guid sessionId)
     {
         var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
-        return session == null ? null : mapper.Map<WorkoutSessionDto>(session);
+        return session == null ? null : mapper.Map<WorkoutSessionModel>(session);
     }
 
-    public async Task<WorkoutSessionDto> UpdateSessionAsync(Guid sessionId, CreateSessionDto request)
+    public async Task<WorkoutSessionModel> UpdateSessionAsync(Guid sessionId, CreateSessionModel request)
     {
         var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
         if (session == null)
@@ -45,10 +45,10 @@ public class SessionService : ISessionService
         unitOfWork.WorkoutSessions.Update(session);
         await unitOfWork.SaveChangesAsync();
 
-        return mapper.Map<WorkoutSessionDto>(session);
+        return mapper.Map<WorkoutSessionModel>(session);
     }
 
-    public async Task<List<WorkoutSessionDto>> GetUserSessionsAsync(Guid userId, DateOnly? startDate = null, DateOnly? endDate = null)
+    public async Task<List<WorkoutSessionModel>> GetUserSessionsAsync(Guid userId, DateOnly? startDate = null, DateOnly? endDate = null)
     {
         var query = unitOfWork.WorkoutSessions.GetQueryable()
             .Where(s => s.UserId == userId);
@@ -64,7 +64,7 @@ public class SessionService : ISessionService
             .ThenInclude(sl => sl.Movement)
             .ToListAsync();
 
-        return mapper.Map<List<WorkoutSessionDto>>(sessions);
+        return mapper.Map<List<WorkoutSessionModel>>(sessions);
     }
 
     public async Task<object> GetUserSessionStatsAsync(Guid userId)
@@ -90,7 +90,7 @@ public class SessionService : ISessionService
         };
     }
 
-    public async Task<SetLogDto> LogSetAsync(CreateSetLogDto dto)
+    public async Task<SetLogModel> LogSetAsync(CreateSetLogModel dto)
     {
         var setLog = mapper.Map<SetLog>(dto);
         setLog.Id = Guid.NewGuid();
@@ -103,7 +103,7 @@ public class SessionService : ISessionService
             .Include(sl => sl.Movement)
             .FirstAsync(sl => sl.Id == setLog.Id);
 
-        return mapper.Map<SetLogDto>(setLogWithMovement);
+        return mapper.Map<SetLogModel>(setLogWithMovement);
     }
 
     public async Task DeleteSetAsync(Guid setId)

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using PplCoach.Application.DTOs.Integrations;
-using PplCoach.Application.Services;
+using PplCoach.Application.Models.Integrations;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Enums;
 
 namespace PplCoach.Api.Endpoints;
@@ -52,7 +52,7 @@ public static class IntegrationEndpoints
 
         // OAuth callback
         group.MapPost("/oauth/callback", async (
-            [FromBody] CreateIntegrationDto dto,
+            [FromBody] CreateIntegrationModel dto,
             [FromQuery] Guid userId,
             IIntegrationService integrationService) =>
         {

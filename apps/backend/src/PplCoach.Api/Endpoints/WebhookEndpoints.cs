@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using PplCoach.Application.Services;
+using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Enums;
 using System.Text;
 

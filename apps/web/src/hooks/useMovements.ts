@@ -13,7 +13,8 @@ export function useMovement(id: string | undefined) {
 }
 
 export function useMovementsByEquipment(equipmentTypes: number[]) {
-  return useGetMovementsByEquipment({ equipmentTypes }, {
+  const joinedTypes = equipmentTypes.join(',')
+  return useGetMovementsByEquipment({ equipmentTypes: joinedTypes }, {
     query: {
       enabled: equipmentTypes.length > 0,
     }

@@ -1,13 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useAppStore } from '../stores/appStore';
 
-interface PerformanceEntry {
-  name: string;
-  startTime: number;
-  duration: number;
-  entryType: string;
-}
-
 export function usePerformanceMonitoring() {
   const { updatePerformanceMetrics, performanceMetrics } = useAppStore();
 

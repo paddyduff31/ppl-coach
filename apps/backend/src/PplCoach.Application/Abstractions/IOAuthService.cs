@@ -1,6 +1,6 @@
 using PplCoach.Domain.Enums;
 
-namespace PplCoach.Application.Services;
+namespace PplCoach.Application.Abstractions;
 
 public interface IOAuthService
 {
