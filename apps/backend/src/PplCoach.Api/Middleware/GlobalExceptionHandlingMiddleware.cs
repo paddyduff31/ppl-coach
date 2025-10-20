@@ -5,31 +5,20 @@ using PplCoach.Domain.Exceptions;
 
 namespace PplCoach.Api.Middleware;
 
-public class GlobalExceptionHandlingMiddleware
+public class GlobalExceptionHandlingMiddleware(
+    RequestDelegate next,
+    ILogger<GlobalExceptionHandlingMiddleware> logger,
+    IWebHostEnvironment environment)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionHandlingMiddleware> _logger;
-    private readonly IWebHostEnvironment _environment;
-
-    public GlobalExceptionHandlingMiddleware(
-        RequestDelegate next,
-        ILogger<GlobalExceptionHandlingMiddleware> logger,
-        IWebHostEnvironment environment)
-    {
-        _next = next;
-        _logger = logger;
-        _environment = environment;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred while processing the request");
+            logger.LogError(ex, "An unhandled exception occurred while processing the request");
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -72,7 +61,7 @@ public class GlobalExceptionHandlingMiddleware
 
             default:
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                response.Message = _environment.IsDevelopment()
+                response.Message = environment.IsDevelopment()
                     ? exception.Message
                     : "An internal server error occurred";
                 break;
