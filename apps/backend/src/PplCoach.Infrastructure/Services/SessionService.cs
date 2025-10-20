@@ -11,11 +11,13 @@ public class SessionService : ISessionService
 {
     private readonly IUnitOfWork unitOfWork;
     private readonly IMapper mapper;
+    private readonly TimeProvider timeProvider;
 
-    public SessionService(IUnitOfWork unitOfWork, IMapper mapper)
+    public SessionService(IUnitOfWork unitOfWork, IMapper mapper, TimeProvider timeProvider)
     {
         this.unitOfWork = unitOfWork;
         this.mapper = mapper;
+        this.timeProvider = timeProvider;
     }
 
     public async Task<WorkoutSessionModel> CreateSessionAsync(CreateSessionModel dto)
@@ -74,7 +76,7 @@ public class SessionService : ISessionService
             .Where(s => s.UserId == userId)
             .ToListAsync();
 
-        var now = DateTime.UtcNow;
+        var now = timeProvider.GetUtcNow().DateTime;
         var oneWeekAgo = DateOnly.FromDateTime(now.AddDays(-7));
         var thisWeekSessions = sessions.Count(s => s.Date >= oneWeekAgo);
 
@@ -125,7 +127,7 @@ public class SessionService : ISessionService
             .ToList();
 
         var streak = 0;
-        var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var currentDate = DateOnly.FromDateTime(timeProvider.GetUtcNow().DateTime);
 
         foreach (var session in orderedSessions)
         {

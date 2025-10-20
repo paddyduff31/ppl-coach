@@ -12,11 +12,13 @@ public class LocalImageUploadService : IImageUploadService
     private readonly LocalFileOptions _options;
     private readonly ILogger<LocalImageUploadService> _logger;
     private readonly IHostEnvironment _environment;
+    private readonly TimeProvider _timeProvider;
 
     public LocalImageUploadService(
         IOptions<LocalFileOptions> options,
         ILogger<LocalImageUploadService> logger,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        TimeProvider timeProvider)
     {
         var rawOptions = options.Value;
         // Convert relative path to absolute path
@@ -27,6 +29,7 @@ public class LocalImageUploadService : IImageUploadService
         };
         _logger = logger;
         _environment = environment;
+        _timeProvider = timeProvider;
 
         // Ensure upload directory exists
         EnsureUploadDirectoryExists();
@@ -42,7 +45,7 @@ public class LocalImageUploadService : IImageUploadService
         {
             var fileExtension = Path.GetExtension(fileName);
             var uniqueFileName = $"{Guid.NewGuid():N}{fileExtension}";
-            var timestamp = DateTime.UtcNow.ToString("yyyy/MM/dd");
+            var timestamp = _timeProvider.GetUtcNow().ToString("yyyy/MM/dd");
             var relativePath = Path.Combine("images", timestamp, uniqueFileName);
             var fullPath = Path.Combine(_options.UploadPath, relativePath);
 

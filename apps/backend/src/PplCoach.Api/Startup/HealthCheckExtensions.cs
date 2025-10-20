@@ -24,13 +24,15 @@ public static class HealthCheckExtensions
             ResponseWriter = async (context, report) =>
             {
                 context.Response.ContentType = "application/json";
+                var timeProvider = context.RequestServices.GetRequiredService<TimeProvider>();
+                var now = timeProvider.GetUtcNow().DateTime;
                 var response = new
                 {
                     status = report.Status.ToString().ToLowerInvariant(),
-                    timestamp = DateTime.UtcNow,
+                    timestamp = now,
                     environment = environment.EnvironmentName,
                     version = "1.0.0",
-                    uptime = DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime,
+                    uptime = now - System.Diagnostics.Process.GetCurrentProcess().StartTime,
                     checks = report.Entries.ToDictionary(
                         kvp => kvp.Key,
                         kvp => new

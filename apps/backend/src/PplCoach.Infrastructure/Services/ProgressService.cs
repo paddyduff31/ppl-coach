@@ -6,7 +6,7 @@ using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class ProgressService(PplCoachDbContext context) : IProgressService
+public class ProgressService(PplCoachDbContext context, TimeProvider timeProvider) : IProgressService
 {
     public async Task<List<PersonalRecordModel>> GetPersonalRecordsAsync(Guid userId)
     {
@@ -68,8 +68,8 @@ public class ProgressService(PplCoachDbContext context) : IProgressService
     public async Task<ProgressSummaryModel> GetProgressSummaryAsync(Guid userId)
     {
         var personalRecords = await GetPersonalRecordsAsync(userId);
-        var lastMonth = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var lastMonth = DateOnly.FromDateTime(timeProvider.GetUtcNow().DateTime.AddDays(-30));
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().DateTime);
         var muscleGroupProgress = await GetMuscleGroupProgressAsync(userId, lastMonth, today);
 
         return new ProgressSummaryModel

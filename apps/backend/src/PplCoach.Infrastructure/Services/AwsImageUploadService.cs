@@ -13,15 +13,18 @@ public class AwsImageUploadService : IImageUploadService
     private readonly IAmazonS3 _s3Client;
     private readonly AwsS3Options _options;
     private readonly ILogger<AwsImageUploadService> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public AwsImageUploadService(
         IAmazonS3 s3Client,
         IOptions<AwsS3Options> options,
-        ILogger<AwsImageUploadService> logger)
+        ILogger<AwsImageUploadService> logger,
+        TimeProvider timeProvider)
     {
         _s3Client = s3Client;
         _options = options.Value;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<string>> UploadImageAsync(
@@ -43,7 +46,7 @@ public class AwsImageUploadService : IImageUploadService
                 ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256,
                 Metadata =
                 {
-                    ["uploaded-at"] = DateTime.UtcNow.ToString("O"),
+                    ["uploaded-at"] = _timeProvider.GetUtcNow().ToString("O"),
                     ["original-filename"] = fileName
                 }
             };
@@ -125,7 +128,7 @@ public class AwsImageUploadService : IImageUploadService
 
     private string GenerateImageKey(string fileName)
     {
-        var timestamp = DateTime.UtcNow.ToString("yyyy/MM/dd");
+        var timestamp = _timeProvider.GetUtcNow().ToString("yyyy/MM/dd");
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var extension = Path.GetExtension(fileName);
         var cleanFileName = Path.GetFileNameWithoutExtension(fileName)

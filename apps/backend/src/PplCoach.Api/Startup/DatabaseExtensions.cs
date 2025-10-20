@@ -49,7 +49,8 @@ public static class DatabaseExtensions
             }
 
             // Seed data after migrations if seeder exists
-            await DatabaseSeeder.SeedAsync(context);
+            var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
+            await DatabaseSeeder.SeedAsync(context, timeProvider);
         }
         catch (Exception ex)
         {

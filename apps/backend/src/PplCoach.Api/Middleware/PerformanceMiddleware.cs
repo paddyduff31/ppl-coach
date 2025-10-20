@@ -3,12 +3,12 @@ using System.Text.Json;
 
 namespace PplCoach.Api.Middleware;
 
-public class PerformanceMiddleware(RequestDelegate next, ILogger<PerformanceMiddleware> logger)
+public class PerformanceMiddleware(RequestDelegate next, ILogger<PerformanceMiddleware> logger, TimeProvider timeProvider)
 {
     public async Task InvokeAsync(HttpContext context)
     {
         var stopwatch = Stopwatch.StartNew();
-        var startTime = DateTime.UtcNow;
+        var startTime = timeProvider.GetUtcNow();
 
         try
         {

@@ -16,7 +16,8 @@ public class IntegrationService(
     IOAuthService oauthService,
     IMapper mapper,
     PplCoachDbContext context,
-    ILogger<IntegrationService> logger)
+    ILogger<IntegrationService> logger,
+    TimeProvider timeProvider)
     : IIntegrationService
 {
     public async Task<string> GetAuthorizationUrlAsync(Guid userId, IntegrationType type, string? redirectUrl = null)
@@ -51,7 +52,7 @@ public class IntegrationService(
             existingIntegration.RefreshToken = tokenResponse.RefreshToken;
             existingIntegration.TokenExpiresAt = tokenResponse.ExpiresAt;
             existingIntegration.IsActive = true;
-            existingIntegration.ConnectedAt = DateTime.UtcNow;
+            existingIntegration.ConnectedAt = timeProvider.GetUtcNow().DateTime;
 
             integration = existingIntegration;
         }
@@ -68,7 +69,7 @@ public class IntegrationService(
                 RefreshToken = tokenResponse.RefreshToken,
                 TokenExpiresAt = tokenResponse.ExpiresAt,
                 IsActive = true,
-                ConnectedAt = DateTime.UtcNow
+                ConnectedAt = timeProvider.GetUtcNow().DateTime
             };
 
             await unitOfWork.ThirdPartyIntegrations.AddAsync(integration);
@@ -139,7 +140,7 @@ public class IntegrationService(
             Id = Guid.NewGuid(),
             IntegrationId = integrationId,
             Status = SyncStatus.InProgress,
-            StartedAt = DateTime.UtcNow
+            StartedAt = timeProvider.GetUtcNow().DateTime
         };
 
         await unitOfWork.IntegrationSyncLogs.AddAsync(syncLog);
@@ -148,7 +149,7 @@ public class IntegrationService(
         try
         {
             // Refresh token if needed
-            if (integration.TokenExpiresAt.HasValue && integration.TokenExpiresAt < DateTime.UtcNow.AddMinutes(5))
+            if (integration.TokenExpiresAt.HasValue && integration.TokenExpiresAt < timeProvider.GetUtcNow().DateTime.AddMinutes(5))
             {
                 await RefreshIntegrationTokenAsync(integration);
             }
@@ -162,18 +163,18 @@ public class IntegrationService(
             };
 
             syncLog.Status = SyncStatus.Completed;
-            syncLog.CompletedAt = DateTime.UtcNow;
+            syncLog.CompletedAt = timeProvider.GetUtcNow().DateTime;
             syncLog.RecordsProcessed = result.RecordsProcessed;
             syncLog.RecordsImported = result.RecordsImported;
             syncLog.RecordsSkipped = result.RecordsSkipped;
 
-            integration.LastSyncAt = DateTime.UtcNow;
+            integration.LastSyncAt = timeProvider.GetUtcNow().DateTime;
             integration.SyncCursor = result.SyncCursor;
         }
         catch (Exception ex)
         {
             syncLog.Status = SyncStatus.Failed;
-            syncLog.CompletedAt = DateTime.UtcNow;
+            syncLog.CompletedAt = timeProvider.GetUtcNow().DateTime;
             syncLog.ErrorMessage = ex.Message;
             logger.LogError(ex, "Sync failed for integration {IntegrationId}", integrationId);
         }

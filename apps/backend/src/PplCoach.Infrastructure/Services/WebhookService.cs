@@ -11,7 +11,8 @@ namespace PplCoach.Infrastructure.Services;
 public class WebhookService(
     IConfiguration configuration,
     ILogger<WebhookService> logger,
-    IIntegrationService integrationService)
+    IIntegrationService integrationService,
+    TimeProvider timeProvider)
     : IWebhookService
 {
     private readonly IIntegrationService _integrationService = integrationService;
@@ -93,7 +94,7 @@ public class WebhookService(
             Type = IntegrationType.MyFitnessPal,
             EventType = "diary_update",
             ExternalUserId = data.GetProperty("user_id").ToString(),
-            EventTime = DateTime.UtcNow,
+            EventTime = timeProvider.GetUtcNow().DateTime,
             Data = JsonSerializer.Deserialize<Dictionary<string, object>>(payload) ?? new()
         };
     }

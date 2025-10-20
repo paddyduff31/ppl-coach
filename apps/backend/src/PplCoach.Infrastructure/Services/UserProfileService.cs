@@ -6,7 +6,7 @@ using PplCoach.Domain.Repositories;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class UserProfileService(IUnitOfWork unitOfWork, IMapper mapper) : IUserProfileService
+public class UserProfileService(IUnitOfWork unitOfWork, IMapper mapper, TimeProvider timeProvider) : IUserProfileService
 {
     public async Task<UserProfileModel?> GetByIdAsync(Guid id)
     {
@@ -40,7 +40,7 @@ public class UserProfileService(IUnitOfWork unitOfWork, IMapper mapper) : IUserP
             Id = Guid.NewGuid(),
             Email = email,
             DisplayName = displayName,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = timeProvider.GetUtcNow().DateTime
         };
 
         await unitOfWork.UserProfiles.AddAsync(profile);

@@ -9,7 +9,7 @@ using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context)
+public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context, TimeProvider timeProvider)
     : IMovementService
 {
     public async Task<List<MovementModel>> GetAllAsync()
@@ -53,7 +53,7 @@ public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbC
             _ => query
         };
 
-        var cutoffDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2));
+        var cutoffDate = DateOnly.FromDateTime(timeProvider.GetUtcNow().DateTime.AddDays(-2));
         var recentMovements = await context.SetLogs
             .Include(sl => sl.Session)
             .Where(sl => sl.Session.UserId == request.UserId && sl.Session.Date >= cutoffDate)

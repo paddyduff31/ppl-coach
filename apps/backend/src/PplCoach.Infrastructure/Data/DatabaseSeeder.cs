@@ -6,7 +6,7 @@ namespace PplCoach.Infrastructure.Data;
 
 public static class DatabaseSeeder
 {
-    public static async Task SeedAsync(PplCoachDbContext context)
+    public static async Task SeedAsync(PplCoachDbContext context, TimeProvider timeProvider)
     {
         try
         {
@@ -24,7 +24,7 @@ public static class DatabaseSeeder
 
         Console.WriteLine("🌱 Starting database seeding...");
 
-        await SeedUserProfilesAsync(context);
+        await SeedUserProfilesAsync(context, timeProvider);
         await context.SaveChangesAsync();
         Console.WriteLine("🌱 User profiles seeded");
 
@@ -39,7 +39,7 @@ public static class DatabaseSeeder
         Console.WriteLine("🌱 Database seeding completed!");
     }
 
-    private static async Task SeedUserProfilesAsync(PplCoachDbContext context)
+    private static async Task SeedUserProfilesAsync(PplCoachDbContext context, TimeProvider timeProvider)
     {
         var developmentUser = new UserProfile
         {
@@ -48,7 +48,7 @@ public static class DatabaseSeeder
             DisplayName = "Development User",
             HeightCm = 175.0m,
             BodyweightKg = 75.0m,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = timeProvider.GetUtcNow().DateTime
         };
 
         await context.UserProfiles.AddAsync(developmentUser);

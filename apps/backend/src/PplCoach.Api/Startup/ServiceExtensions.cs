@@ -10,6 +10,9 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddBusinessServices(this IServiceCollection services)
     {
+        // Add time provider for testable time operations
+        services.AddSingleton(TimeProvider.System);
+
         // Add repositories and services
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserProfileService, UserProfileService>();

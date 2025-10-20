@@ -7,10 +7,12 @@ namespace PplCoach.Api.Hubs;
 public class WorkoutHub : Hub
 {
     private readonly ILogger<WorkoutHub> _logger;
+    private readonly TimeProvider _timeProvider;
 
-    public WorkoutHub(ILogger<WorkoutHub> logger)
+    public WorkoutHub(ILogger<WorkoutHub> logger, TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     // Join a workout session for real-time updates
@@ -38,7 +40,7 @@ public class WorkoutHub : Hub
             SetNumber = setNumber,
             Reps = reps,
             Weight = weight,
-            CompletedAt = DateTime.UtcNow,
+            CompletedAt = _timeProvider.GetUtcNow().DateTime,
             UserId = Context.UserIdentifier
         };
 
@@ -55,7 +57,7 @@ public class WorkoutHub : Hub
             CompletedSets = completedSets,
             TotalSets = totalSets,
             PercentComplete = totalSets > 0 ? (completedSets * 100 / totalSets) : 0,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = _timeProvider.GetUtcNow().DateTime
         };
 
         await Clients.Group($"workout-{sessionId}")
@@ -69,7 +71,7 @@ public class WorkoutHub : Hub
         {
             FromUserId = Context.UserIdentifier,
             Message = message,
-            SentAt = DateTime.UtcNow,
+            SentAt = _timeProvider.GetUtcNow().DateTime,
             Type = "coach-message"
         };
 

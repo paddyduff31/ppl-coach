@@ -2,7 +2,10 @@ using PplCoach.Api.Startup;
 
 namespace PplCoach.Api.Services.BackgroundJobs;
 
-public class AnalyticsBackgroundService(IServiceProvider serviceProvider, ILogger<AnalyticsBackgroundService> logger)
+public class AnalyticsBackgroundService(
+    IServiceProvider serviceProvider,
+    ILogger<AnalyticsBackgroundService> logger,
+    TimeProvider timeProvider)
     : BackgroundService
 {
     private readonly TimeSpan _period = TimeSpan.FromHours(24); // Generate reports daily
@@ -36,7 +39,7 @@ public class AnalyticsBackgroundService(IServiceProvider serviceProvider, ILogge
 
     private async Task WaitUntil2AM(CancellationToken stoppingToken)
     {
-        var now = DateTime.Now;
+        var now = timeProvider.GetLocalNow().DateTime;
         var next2AM = now.Date.AddDays(now.Hour >= 2 ? 1 : 0).AddHours(2);
         var delay = next2AM - now;
 

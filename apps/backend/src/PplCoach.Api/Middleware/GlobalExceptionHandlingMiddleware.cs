@@ -8,7 +8,8 @@ namespace PplCoach.Api.Middleware;
 public class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     ILogger<GlobalExceptionHandlingMiddleware> logger,
-    IWebHostEnvironment environment)
+    IWebHostEnvironment environment,
+    TimeProvider timeProvider)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -27,7 +28,10 @@ public class GlobalExceptionHandlingMiddleware(
     {
         context.Response.ContentType = "application/json";
 
-        var response = new ErrorResponse();
+        var response = new ErrorResponse
+        {
+            Timestamp = timeProvider.GetUtcNow().DateTime
+        };
 
         switch (exception)
         {
@@ -91,5 +95,5 @@ public class ErrorResponse
     public string? ErrorCode { get; set; }
     public string? CorrelationId { get; set; }
     public Dictionary<string, string>? Details { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; }
 }

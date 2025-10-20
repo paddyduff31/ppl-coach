@@ -13,14 +13,16 @@ public class OAuthService : IOAuthService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<OAuthService> _logger;
+    private readonly TimeProvider _timeProvider;
 
     private readonly Dictionary<IntegrationType, OAuthConfig> _configs;
 
-    public OAuthService(HttpClient httpClient, IConfiguration configuration, ILogger<OAuthService> logger)
+    public OAuthService(HttpClient httpClient, IConfiguration configuration, ILogger<OAuthService> logger, TimeProvider timeProvider)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
+        _timeProvider = timeProvider;
 
         _configs = new Dictionary<IntegrationType, OAuthConfig>
         {
@@ -109,7 +111,7 @@ public class OAuthService : IOAuthService
             ExpiresAt = tokenData.TryGetProperty("expires_at", out var expiresAt)
                 ? DateTimeOffset.FromUnixTimeSeconds(expiresAt.GetInt64()).DateTime
                 : tokenData.TryGetProperty("expires_in", out var expiresIn)
-                    ? DateTime.UtcNow.AddSeconds(expiresIn.GetInt32())
+                    ? _timeProvider.GetUtcNow().DateTime.AddSeconds(expiresIn.GetInt32())
                     : null,
             TokenType = tokenData.TryGetProperty("token_type", out var tokenType) ? tokenType.GetString() ?? "Bearer" : "Bearer",
             Scope = tokenData.TryGetProperty("scope", out var scope)
