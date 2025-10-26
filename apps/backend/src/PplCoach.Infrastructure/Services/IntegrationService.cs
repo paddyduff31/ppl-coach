@@ -5,14 +5,12 @@ using PplCoach.Application.Models.Integrations;
 using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Enums;
-using PplCoach.Domain.Repositories;
 using PplCoach.Infrastructure.Data;
 using System.Text.Json;
 
 namespace PplCoach.Infrastructure.Services;
 
 public class IntegrationService(
-    IUnitOfWork unitOfWork,
     IOAuthService oauthService,
     IMapper mapper,
     PplCoachDbContext context,
@@ -72,10 +70,10 @@ public class IntegrationService(
                 ConnectedAt = timeProvider.GetUtcNow().DateTime
             };
 
-            await unitOfWork.ThirdPartyIntegrations.AddAsync(integration);
+            await context.ThirdPartyIntegrations.AddAsync(integration);
         }
 
-        await unitOfWork.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Created/updated {Type} integration for user {UserId}", dto.Type, userId);
 
@@ -120,7 +118,7 @@ public class IntegrationService(
 
         // Deactivate integration
         integration.IsActive = false;
-        await unitOfWork.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Revoked integration {IntegrationId}", integrationId);
 
@@ -143,8 +141,8 @@ public class IntegrationService(
             StartedAt = timeProvider.GetUtcNow().DateTime
         };
 
-        await unitOfWork.IntegrationSyncLogs.AddAsync(syncLog);
-        await unitOfWork.SaveChangesAsync();
+        await context.IntegrationSyncLogs.AddAsync(syncLog);
+        await context.SaveChangesAsync();
 
         try
         {
@@ -179,7 +177,7 @@ public class IntegrationService(
             logger.LogError(ex, "Sync failed for integration {IntegrationId}", integrationId);
         }
 
-        await unitOfWork.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return mapper.Map<IntegrationSyncModel>(syncLog);
     }

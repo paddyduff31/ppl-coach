@@ -3,56 +3,44 @@ using Microsoft.EntityFrameworkCore;
 using PplCoach.Application.Abstractions;
 using PplCoach.Application.Models;
 using PplCoach.Domain.Entities;
-using PplCoach.Domain.Repositories;
+using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class SessionService : ISessionService
+public class SessionService(PplCoachDbContext context, IMapper mapper, TimeProvider timeProvider) : ISessionService
 {
-    private readonly IUnitOfWork unitOfWork;
-    private readonly IMapper mapper;
-    private readonly TimeProvider timeProvider;
-
-    public SessionService(IUnitOfWork unitOfWork, IMapper mapper, TimeProvider timeProvider)
-    {
-        this.unitOfWork = unitOfWork;
-        this.mapper = mapper;
-        this.timeProvider = timeProvider;
-    }
-
     public async Task<WorkoutSessionModel> CreateSessionAsync(CreateSessionModel dto)
     {
         var session = mapper.Map<WorkoutSession>(dto);
         session.Id = Guid.NewGuid();
 
-        await unitOfWork.WorkoutSessions.AddAsync(session);
-        await unitOfWork.SaveChangesAsync();
+        await context.WorkoutSessions.AddAsync(session);
+        await context.SaveChangesAsync();
 
         return mapper.Map<WorkoutSessionModel>(session);
     }
 
     public async Task<WorkoutSessionModel?> GetSessionAsync(Guid sessionId)
     {
-        var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
+        var session = await context.WorkoutSessions.FindAsync(sessionId);
         return session == null ? null : mapper.Map<WorkoutSessionModel>(session);
     }
 
     public async Task<WorkoutSessionModel> UpdateSessionAsync(Guid sessionId, CreateSessionModel request)
     {
-        var session = await unitOfWork.WorkoutSessions.GetByIdAsync(sessionId);
+        var session = await context.WorkoutSessions.FindAsync(sessionId);
         if (session == null)
             throw new KeyNotFoundException($"Session with ID {sessionId} not found");
 
         mapper.Map(request, session);
-        unitOfWork.WorkoutSessions.Update(session);
-        await unitOfWork.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return mapper.Map<WorkoutSessionModel>(session);
     }
 
     public async Task<List<WorkoutSessionModel>> GetUserSessionsAsync(Guid userId, DateOnly? startDate = null, DateOnly? endDate = null)
     {
-        var query = unitOfWork.WorkoutSessions.GetQueryable()
+        var query = context.WorkoutSessions
             .Where(s => s.UserId == userId);
 
         if (startDate.HasValue)
@@ -71,7 +59,7 @@ public class SessionService : ISessionService
 
     public async Task<object> GetUserSessionStatsAsync(Guid userId)
     {
-        var sessions = await unitOfWork.WorkoutSessions.GetQueryable()
+        var sessions = await context.WorkoutSessions
             .Include(s => s.SetLogs)
             .Where(s => s.UserId == userId)
             .ToListAsync();
@@ -97,11 +85,11 @@ public class SessionService : ISessionService
         var setLog = mapper.Map<SetLog>(dto);
         setLog.Id = Guid.NewGuid();
 
-        await unitOfWork.SetLogs.AddAsync(setLog);
-        await unitOfWork.SaveChangesAsync();
+        await context.SetLogs.AddAsync(setLog);
+        await context.SaveChangesAsync();
 
         // Load with movement name
-        var setLogWithMovement = await unitOfWork.SetLogs.GetQueryable()
+        var setLogWithMovement = await context.SetLogs
             .Include(sl => sl.Movement)
             .FirstAsync(sl => sl.Id == setLog.Id);
 
@@ -110,12 +98,12 @@ public class SessionService : ISessionService
 
     public async Task DeleteSetAsync(Guid setId)
     {
-        var setLog = await unitOfWork.SetLogs.GetByIdAsync(setId);
+        var setLog = await context.SetLogs.FindAsync(setId);
         if (setLog == null)
             throw new KeyNotFoundException($"Set log with ID {setId} not found");
 
-        unitOfWork.SetLogs.Remove(setLog);
-        await unitOfWork.SaveChangesAsync();
+        context.SetLogs.Remove(setLog);
+        await context.SaveChangesAsync();
     }
 
     private int CalculateWorkoutStreak(List<WorkoutSession> sessions)

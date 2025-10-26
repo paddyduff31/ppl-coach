@@ -1,6 +1,4 @@
 using PplCoach.Application.Abstractions;
-using PplCoach.Domain.Repositories;
-using PplCoach.Infrastructure.Repositories;
 using PplCoach.Infrastructure.Services;
 using PplCoach.Infrastructure.Services.Integrations;
 
@@ -13,8 +11,7 @@ public static class ServiceExtensions
         // Add time provider for testable time operations
         services.AddSingleton(TimeProvider.System);
 
-        // Add repositories and services
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        // Add services
         services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IMovementService, MovementService>();

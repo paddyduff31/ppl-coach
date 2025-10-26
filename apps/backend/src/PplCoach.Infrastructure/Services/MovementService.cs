@@ -4,30 +4,33 @@ using PplCoach.Application.Models;
 using PplCoach.Application.Abstractions;
 using PplCoach.Domain.Entities;
 using PplCoach.Domain.Enums;
-using PplCoach.Domain.Repositories;
 using PplCoach.Infrastructure.Data;
 
 namespace PplCoach.Infrastructure.Services;
 
-public class MovementService(IUnitOfWork unitOfWork, IMapper mapper, PplCoachDbContext context, TimeProvider timeProvider)
+public class MovementService(PplCoachDbContext context, IMapper mapper, TimeProvider timeProvider)
     : IMovementService
 {
     public async Task<List<MovementModel>> GetAllAsync()
     {
-        var movements = await unitOfWork.Movements.GetAllAsync();
+        var movements = await context.Movements
+            .AsNoTracking()
+            .ToListAsync();
         return mapper.Map<List<MovementModel>>(movements);
     }
 
     public async Task<List<MovementModel>> GetByEquipmentAsync(EquipmentType availableEquipment)
     {
-        var movements = await unitOfWork.Movements
-            .FindAsync(m => (m.Requires & availableEquipment) == m.Requires);
+        var movements = await context.Movements
+            .AsNoTracking()
+            .Where(m => (m.Requires & availableEquipment) == m.Requires)
+            .ToListAsync();
         return mapper.Map<List<MovementModel>>(movements);
     }
 
     public async Task<MovementModel?> GetByIdAsync(Guid id)
     {
-        var movement = await unitOfWork.Movements.GetByIdAsync(id);
+        var movement = await context.Movements.FindAsync(id);
         return movement != null ? mapper.Map<MovementModel>(movement) : null;
     }
 
